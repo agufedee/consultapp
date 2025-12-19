@@ -11,8 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::disableForeignKeyConstraints();
-
         Schema::create('measurements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('patient_id')->constrained('patients');
@@ -25,8 +23,6 @@ return new class extends Migration
             $table->timestamps();
             $table->index(['patient_id', 'measurement_date']);
         });
-
-        Schema::enableForeignKeyConstraints();
     }
 
     /**

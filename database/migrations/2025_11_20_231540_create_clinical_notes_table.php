@@ -11,8 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::disableForeignKeyConstraints();
-
         Schema::create('clinical_notes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('appointment_id')->constrained('appointments');
@@ -21,8 +19,6 @@ return new class extends Migration
             $table->string('diagnosis', 500)->nullable();
             $table->timestamps();
         });
-
-        Schema::enableForeignKeyConstraints();
     }
 
     /**
