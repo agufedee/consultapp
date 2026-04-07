@@ -12,10 +12,11 @@ ConsultApp es una aplicación que facilita la gestión de citas y turnos en cons
 - Integración con el sistema Filament y paquetes para visualizaciones como `Filament Full Calendar`.
 
 ## Tecnologías utilizadas
-- **Laravel**: Framework backend.
-- **Filament**: Herramienta para la creación de paneles de administración.
+- **Laravel 12**: Framework backend.
+- **Filament v4**: Herramienta para la creación de paneles de administración.
+- **Livewire 3**: Componentes reactivos.
 - **Blade**: Motor de Plantillas.
-- **JavaScript**, **CSS**, y Vite: Para el frontend.
+- **Tailwind CSS 4** y **Vite 7**: Para el frontend.
 - **MySQL**: Base de datos para almacenar la información.
 
 ## Instalación
@@ -58,6 +59,118 @@ Una vez configurado, accede al panel de administración en:
 http://localhost/consultorio
 ```
 Aquí podrás gestionar los turnos, pacientes y más.
+
+---
+
+## Changelog de Mejoras (MVP v2.0)
+
+### Nuevas Funcionalidades Implementadas
+
+#### 1. Historial Clínico Completo
+Se agregaron RelationManagers en la vista del paciente para gestionar su historial médico:
+
+- **MeasurementsRelationManager** (`app/Filament/Resources/Patients/RelationManagers/MeasurementsRelationManager.php`)
+  - Registro de mediciones antropométricas (peso, altura, cintura)
+  - Cálculo automático del IMC con categorización visual
+  - Historial completo con filtros por fecha
+  - Asociación opcional con turnos
+
+- **ClinicalNotesRelationManager** (`app/Filament/Resources/Patients/RelationManagers/ClinicalNotesRelationManager.php`)
+  - Registro de notas clínicas por consulta
+  - Campos: Diagnóstico, Observaciones/Evolución, Plan/Indicaciones
+  - Vinculación automática con el turno correspondiente
+
+#### 2. Flujo "Iniciar Consulta"
+Se agregó una acción en el widget de **Turnos de Hoy** del Dashboard:
+
+- **Botón "Iniciar Consulta"** (`app/Filament/Widgets/TodayAppointmentsWidget.php`)
+  - Solo visible para turnos con estado "Agendado" o "Confirmado"
+  - Abre modal con formulario unificado de:
+    - Notas clínicas (diagnóstico, observaciones, indicaciones)
+    - Mediciones antropométricas
+  - Al guardar, cambia automáticamente el estado del turno a "Atendido"
+  - Crea/actualiza registros en `clinical_notes` y `measurements`
+
+#### 3. Gestión de Usuarios y Roles
+Nuevos recursos para administrar el acceso al sistema:
+
+- **UserResource** (`app/Filament/Resources/Users/`)
+  - CRUD completo de usuarios del sistema
+  - Asignación de roles
+  - Gestión de contraseñas con confirmación
+  - Toggle de estado activo/inactivo
+  - Páginas: ListUsers, CreateUser, EditUser
+
+- **RoleResource** (`app/Filament/Resources/Roles/`)
+  - CRUD de roles del sistema
+  - Contador de usuarios por rol
+  - Descripción de permisos
+  - Páginas: ListRoles, CreateRole, EditRole
+
+### Estructura de Archivos Agregados
+
+```
+app/
+├── Filament/
+│   ├── Resources/
+│   │   ├── Patients/
+│   │   │   └── RelationManagers/
+│   │   │       ├── MeasurementsRelationManager.php    [NUEVO]
+│   │   │       └── ClinicalNotesRelationManager.php   [NUEVO]
+│   │   ├── Users/                                      [NUEVO]
+│   │   │   ├── UserResource.php
+│   │   │   └── Pages/
+│   │   │       ├── ListUsers.php
+│   │   │       ├── CreateUser.php
+│   │   │       └── EditUser.php
+│   │   └── Roles/                                      [NUEVO]
+│   │       ├── RoleResource.php
+│   │       └── Pages/
+│   │           ├── ListRoles.php
+│   │           ├── CreateRole.php
+│   │           └── EditRole.php
+│   └── Widgets/
+│       └── TodayAppointmentsWidget.php                [MODIFICADO]
+├── Models/
+│   ├── Patient.php                                    [MODIFICADO]
+│   └── ClinicalNote.php                               [MODIFICADO]
+```
+
+### Modelos Modificados
+
+#### Patient.php
+- Se agregó relación `clinicalNotes()` para acceder a las notas clínicas del paciente
+
+#### ClinicalNote.php
+- Se agregó relación `patient()` para navegación inversa
+
+#### PatientResource.php
+- Se registraron los nuevos RelationManagers:
+  - `MeasurementsRelationManager`
+  - `ClinicalNotesRelationManager`
+
+### Navegación del Panel
+
+Los nuevos recursos aparecen en el menú lateral:
+
+| Sección | Ícono | Descripción |
+|---------|-------|-------------|
+| Pacientes | Users | Lista de pacientes con acceso a ficha completa |
+| Agenda / Turnos | CalendarDays | Calendario y lista de turnos |
+| **Configuración** | | |
+| └─ Usuarios | UserCog | Gestión de usuarios del sistema |
+| └─ Roles | Shield | Gestión de roles y permisos |
+
+### Flujo de Trabajo Recomendado
+
+1. **Inicio del día**: Revisar el widget "Turnos para Hoy" en el Dashboard
+2. **Paciente llega**: Click en "Iniciar Consulta" (botón verde)
+3. **Durante la consulta**: Completar diagnóstico, observaciones e indicaciones
+4. **Mediciones**: Expandir sección y registrar peso/altura/cintura
+5. **Finalizar**: Click en "Guardar y Finalizar Consulta"
+6. **Resultado**: Turno marcado como "Atendido", datos guardados en historial
+
+---
 
 ## Autores
 - [agufedee](https://github.com/agufedee)
