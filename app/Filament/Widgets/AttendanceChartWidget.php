@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Enums\AppointmentStatus;
 use Filament\Widgets\ChartWidget;
 use App\Models\Appointment;
 use Illuminate\Support\Carbon;
@@ -25,7 +26,7 @@ class AttendanceChartWidget extends ChartWidget
         $end   = now()->endOfWeek();
 
         $rows = Appointment::query()
-            ->whereHas('status', fn($q) => $q->where('status_name', 'Atendido'))
+            ->whereHas('status', fn($q) => $q->where('status_name', AppointmentStatus::ATENDIDO->value))
             ->whereBetween('start_date', [$start, $end])
             ->selectRaw('CAST(start_date AS DATE) as day, COUNT(*) as total')
             ->groupByRaw('CAST(start_date AS DATE)')
@@ -58,3 +59,5 @@ class AttendanceChartWidget extends ChartWidget
         return 'bar';
     }
 }
+
+
