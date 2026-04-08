@@ -29,6 +29,7 @@ class TodayAppointmentsWidget extends BaseWidget
         return $table
             ->query(
                 Appointment::query()
+                    ->with(['patient.personalData', 'status'])
                     ->whereDate('start_date', today())
                     ->orderBy('start_date', 'asc')
             )

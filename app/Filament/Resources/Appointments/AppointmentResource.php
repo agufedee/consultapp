@@ -132,7 +132,7 @@ class AppointmentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn($query) => $query->with(['patient', 'status', 'user']))
+            ->modifyQueryUsing(fn($query) => $query->with(['patient.personalData', 'status', 'user']))
             ->columns([
                 Tables\Columns\TextColumn::make('patient_full_name') // Nombre arbitrario
                     ->label('Paciente')
