@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('patients', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('personal_data_id')->constrained('personal_data')->unique();
-            $table->boolean('active')->default(true);
-            $table->timestamps();
+        Schema::table('patients', function (Blueprint $table) {
             $table->softDeletes();
         });
     }
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('patients');
+        Schema::table('patients', function (Blueprint $table) {
+            $table->dropSoftDeletes();
+        });
     }
 };

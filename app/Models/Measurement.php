@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Measurement extends Model
 {
@@ -54,7 +53,7 @@ class Measurement extends Model
     }
 
     // Scopes
-    public function scopeLatest($query)
+    public function scopeLatestMeasurement($query)
     {
         return $query->orderBy('measurement_date', 'desc');
     }

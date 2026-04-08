@@ -114,6 +114,11 @@ Los nuevos recursos aparecen en el menú lateral:
 
 ## [Unreleased]
 
+### Changed
+- **`app/Filament/Resources/Patients/PatientResource.php`**: Se removió `->sortable()` en la columna `last_appointment_date` para evitar ordenamiento inválido al provenir de subquery
+- **`app/Models/Measurement.php`**: Renombrado `scopeLatest()` a `scopeLatestMeasurement()` para evitar colisión con `latest()` de Eloquent
+- **Soft Deletes**: Agregados `SoftDeletes` en modelos `Patient`, `Appointment`, `ClinicalNote` y migraciones para `deleted_at` en `patients`, `appointments`, `clinical_notes`
+
 ### Performance
 - **`app/Filament/Widgets/TodayAppointmentsWidget.php`**: Agregado eager loading de relaciones `patient.personalData` y `status` para prevenir consultas N+1. Antes se ejecutaba 1 query por cada turno del día, ahora se resuelve en una sola consulta
 - **`app/Filament/Resources/Patients/PatientResource.php`**: Optimizada columna `last_appointment_date` usando subquery en lugar de `getStateUsing()`. Eliminado el problema de N+1 que ejecutaba una consulta por cada paciente en la tabla (líneas 114-122, 148-157)
