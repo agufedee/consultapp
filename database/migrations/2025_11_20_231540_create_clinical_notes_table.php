@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('instructions')->nullable();
             $table->string('diagnosis', 500)->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

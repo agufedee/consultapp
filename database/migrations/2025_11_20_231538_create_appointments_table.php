@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignId('status_id')->constrained('statuses');
             $table->string('cancellation_reason', 500)->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

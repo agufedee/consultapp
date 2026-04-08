@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('personal_data_id')->constrained('personal_data')->unique();
             $table->boolean('active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
