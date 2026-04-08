@@ -111,7 +111,16 @@ class PatientResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['personalData', 'gender']))
+            ->modifyQueryUsing(function ($query) {
+                return $query
+                    ->with(['personalData', 'gender'])
+                    ->addSelect([
+                        'last_appointment_date' => \App\Models\Appointment::select('start_date')
+                            ->whereColumn('patient_id', 'patients.id')
+                            ->latest('start_date')
+                            ->limit(1),
+                    ]);
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Nombre Completo')
@@ -135,15 +144,10 @@ class PatientResource extends Resource
                                 : \Carbon\Carbon::parse($state)->format('d/m/Y'));
                     }),
 
-                // Último turno (obtenemos el estado y lo formateamos)
-                Tables\Columns\TextColumn::make('last_appointment')
+                // Último turno (usando subquery para optimizar rendimiento)
+                Tables\Columns\TextColumn::make('last_appointment_date')
                     ->label('Último Turno')
                     ->sortable()
-                    ->getStateUsing(
-                        fn (Patient $record) => $record->appointments()
-                            ->latest('start_date')
-                            ->value('start_date')
-                    )
                     ->formatStateUsing(function ($state) {
                         return blank($state)
                             ? '—'
@@ -227,21 +231,23 @@ class PatientResource extends Resource
 
                         // Nivel 2: Datos en 3 columnas (aprovechando el ancho)
                         Grid::make(3)->schema([
-                        Placeholder::make('phone')
+                            Placeholder::make('phone')
                                 ->label('Teléfono')
                                 ->icon('heroicon-m-phone')
                                 ->content(fn ($record) => $record->phone ?? '-'),
 
-                        Placeholder::make('email')
+                            Placeholder::make('email')
                                 ->label('Email')
                                 ->icon('heroicon-m-envelope')
                                 ->content(fn ($record) => $record->email ?? '-'),
 
-                        Placeholder::make('personalData.birth_date')
+                            Placeholder::make('personalData.birth_date')
                                 ->label('Fecha de Nacimiento')
                                 ->icon('heroicon-m-calendar')
-                                ->content(fn ($record) => $record->personalData?->birth_date?->format('d/m/Y').' ('.$record->personalData?->birth_date?->age.' años)' ?? '-'),
-                    ]),
+                                ->content(fn ($record) => $record->personalData?->birth_date
+                                    ? $record->personalData->birth_date->format('d/m/Y').' ('.$record->personalData->birth_date->age.' años)'
+                                    : '-'),
+                        ]),
 
                     ])
                     ->columnSpanFull(),
