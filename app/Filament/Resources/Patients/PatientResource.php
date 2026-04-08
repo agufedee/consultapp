@@ -227,21 +227,23 @@ class PatientResource extends Resource
 
                         // Nivel 2: Datos en 3 columnas (aprovechando el ancho)
                         Grid::make(3)->schema([
-                        Placeholder::make('phone')
+                            Placeholder::make('phone')
                                 ->label('Teléfono')
                                 ->icon('heroicon-m-phone')
                                 ->content(fn ($record) => $record->phone ?? '-'),
 
-                        Placeholder::make('email')
+                            Placeholder::make('email')
                                 ->label('Email')
                                 ->icon('heroicon-m-envelope')
                                 ->content(fn ($record) => $record->email ?? '-'),
 
-                        Placeholder::make('personalData.birth_date')
+                            Placeholder::make('personalData.birth_date')
                                 ->label('Fecha de Nacimiento')
                                 ->icon('heroicon-m-calendar')
-                                ->content(fn ($record) => $record->personalData?->birth_date?->format('d/m/Y').' ('.$record->personalData?->birth_date?->age.' años)' ?? '-'),
-                    ]),
+                                ->content(fn ($record) => $record->personalData?->birth_date
+                                    ? $record->personalData->birth_date->format('d/m/Y').' ('.$record->personalData->birth_date->age.' años)'
+                                    : '-'),
+                        ]),
 
                     ])
                     ->columnSpanFull(),

@@ -22,9 +22,4 @@ class ClinicalNote extends Model
     {
         return $this->belongsTo(Appointment::class);
     }
-
-    public function patient(): BelongsTo
-    {
-        return $this->belongsTo(Patient::class);
-    }
 }
