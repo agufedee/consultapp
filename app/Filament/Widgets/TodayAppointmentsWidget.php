@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Enums\AppointmentStatus;
 use App\Filament\Resources\Appointments\AppointmentResource;
 use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
@@ -29,6 +30,7 @@ class TodayAppointmentsWidget extends BaseWidget
         return $table
             ->query(
                 Appointment::query()
+                    ->with(['patient.personalData', 'status'])
                     ->whereDate('start_date', today())
                     ->orderBy('start_date', 'asc')
             )
@@ -52,13 +54,7 @@ class TodayAppointmentsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('status.status_name')
                     ->label('Estado')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'Confirmado' => 'info',
-                        'Atendido' => 'success',
-                        'Cancelado' => 'danger',
-                        'Ausente' => 'warning',
-                        default => 'gray',
-                    }),
+                    ->color(fn (string $state): string => AppointmentStatus::fromName($state)?->getColor() ?? 'gray'),
             ])
             ->actions([
                 // Acción principal: Iniciar Consulta
@@ -66,7 +62,7 @@ class TodayAppointmentsWidget extends BaseWidget
                     ->label('Iniciar Consulta')
                     ->icon(LucideIcon::Stethoscope)
                     ->color('success')
-                    ->visible(fn (Appointment $record) => in_array($record->status?->status_name, ['Agendado', 'Confirmado'])
+                    ->visible(fn (Appointment $record) => in_array($record->status?->status_name, [AppointmentStatus::AGENDADO->value, AppointmentStatus::CONFIRMADO->value])
                     )
                     ->modalHeading(fn (Appointment $record) => 'Consulta: '.$record->patient?->full_name
                     )
@@ -124,7 +120,7 @@ class TodayAppointmentsWidget extends BaseWidget
                     ])
                     ->action(function (Appointment $record, array $data): void {
                         // 1. Cambiar estado a "Atendido"
-                        $atendidoStatus = Status::where('status_name', 'Atendido')->first();
+                        $atendidoStatus = Status::where('status_name', AppointmentStatus::ATENDIDO->value)->first();
                         if ($atendidoStatus) {
                             $record->update(['status_id' => $atendidoStatus->id]);
                         }
