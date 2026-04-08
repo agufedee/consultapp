@@ -29,12 +29,12 @@ class ConsultorioPanelProvider extends PanelProvider
             ->id('consultorio')
             ->path('consultorio')
             ->login()
-            ->favicon(secure_asset('images/logo.png'))
+            ->favicon(asset('images/logo.png'))
             ->brandName('ConsultApp')
             ->brandLogo(fn() => new HtmlString('
             <div style="display: flex; align-items: center; gap: 15px;">
                 <img 
-                    src="' . secure_asset('images/logo.png') . '" 
+                    src="' . asset('images/logo.png') . '" 
                     alt="Logo ConsultApp" 
                     style="height: 40px; width: auto;" 
                 />

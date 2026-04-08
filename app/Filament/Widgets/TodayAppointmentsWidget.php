@@ -2,31 +2,37 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Resources\Appointments\AppointmentResource;
+use App\Filament\Resources\Patients\PatientResource;
 use App\Models\Appointment;
+use App\Models\Measurement;
+use App\Models\Status;
+use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
+use Filament\Forms;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use App\Filament\Resources\Appointments\AppointmentResource;
-use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
+use Illuminate\Support\Arr;
 
 class TodayAppointmentsWidget extends BaseWidget
 {
     protected static bool $isLazy = true;
-    // Orden 1 para que salga arriba de todo
+
     protected static ?int $sort = 1;
 
-    // Ocupar todo el ancho disponible
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
         return $table
             ->query(
                 Appointment::query()
-                    ->whereDate('start_date', today()) // Filtro: Solo hoy
+                    ->whereDate('start_date', today())
                     ->orderBy('start_date', 'asc')
             )
-            ->heading('Turnos para Hoy, ' . now()->translatedFormat('l d \d\e F'))
+            ->heading('Turnos para Hoy, '.now()->translatedFormat('l d \d\e F'))
             ->columns([
                 Tables\Columns\TextColumn::make('start_date')
                     ->label('Hora')
@@ -46,22 +52,126 @@ class TodayAppointmentsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('status.status_name')
                     ->label('Estado')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'Confirmado' => 'info',
-                        'Atendido'   => 'success',
-                        'Cancelado'  => 'danger',
-                        'Ausente'    => 'warning',
-                        default      => 'gray',
+                        'Atendido' => 'success',
+                        'Cancelado' => 'danger',
+                        'Ausente' => 'warning',
+                        default => 'gray',
                     }),
             ])
             ->actions([
-                // Botón discreto para gestionar el turno
+                // Acción principal: Iniciar Consulta
+                \Filament\Actions\Action::make('iniciar_consulta')
+                    ->label('Iniciar Consulta')
+                    ->icon(LucideIcon::Stethoscope)
+                    ->color('success')
+                    ->visible(fn (Appointment $record) => in_array($record->status?->status_name, ['Agendado', 'Confirmado'])
+                    )
+                    ->modalHeading(fn (Appointment $record) => 'Consulta: '.$record->patient?->full_name
+                    )
+                    ->modalDescription('Complete los datos de la consulta. El estado del turno cambiará a "Atendido".')
+                    ->modalWidth('5xl')
+                    ->modalSubmitActionLabel('Guardar y Finalizar Consulta')
+                    ->mountUsing(function ($form, Appointment $record) {
+                        $noteData = $record->clinicalNote?->toArray() ?? [];
+                        $measurementData = Measurement::where('appointment_id', $record->id)->first()?->toArray() ?? [];
+                        $form->fill(array_merge($noteData, $measurementData));
+                    })
+                    ->form([
+                        Section::make('Notas Clínicas')
+                            ->icon(LucideIcon::ClipboardList)
+                            ->collapsible()
+                            ->schema([
+                                Forms\Components\TextInput::make('diagnosis')
+                                    ->label('Diagnóstico')
+                                    ->placeholder('Ej: Sobrepeso grado I...')
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Textarea::make('observations')
+                                    ->label('Evolución / Observaciones')
+                                    ->placeholder('Paciente reporta...')
+                                    ->rows(4),
+
+                                Forms\Components\Textarea::make('instructions')
+                                    ->label('Plan / Indicaciones')
+                                    ->placeholder('Pautas alimentarias...')
+                                    ->rows(3),
+                            ]),
+
+                        Section::make('Mediciones Antropométricas')
+                            ->icon(LucideIcon::Scale)
+                            ->collapsible()
+                            ->collapsed()
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    Forms\Components\TextInput::make('weight')
+                                        ->label('Peso (kg)')
+                                        ->numeric()
+                                        ->suffix('kg'),
+
+                                    Forms\Components\TextInput::make('height')
+                                        ->label('Altura (cm)')
+                                        ->numeric()
+                                        ->suffix('cm'),
+
+                                    Forms\Components\TextInput::make('waist')
+                                        ->label('Cintura (cm)')
+                                        ->numeric()
+                                        ->suffix('cm'),
+                                ]),
+                            ]),
+                    ])
+                    ->action(function (Appointment $record, array $data): void {
+                        // 1. Cambiar estado a "Atendido"
+                        $atendidoStatus = Status::where('status_name', 'Atendido')->first();
+                        if ($atendidoStatus) {
+                            $record->update(['status_id' => $atendidoStatus->id]);
+                        }
+
+                        // 2. Guardar Nota Clínica
+                        if (! empty($data['diagnosis']) || ! empty($data['observations']) || ! empty($data['instructions'])) {
+                            $record->clinicalNote()->updateOrCreate(
+                                ['appointment_id' => $record->id],
+                                Arr::only($data, ['diagnosis', 'observations', 'instructions'])
+                            );
+                        }
+
+                        // 3. Guardar Medición
+                        if (! empty($data['weight']) || ! empty($data['height']) || ! empty($data['waist'])) {
+                            Measurement::updateOrCreate(
+                                ['appointment_id' => $record->id],
+                                [
+                                    'patient_id' => $record->patient_id,
+                                    'measurement_date' => now(),
+                                    'weight' => $data['weight'],
+                                    'height' => $data['height'],
+                                    'waist' => $data['waist'],
+                                ]
+                            );
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Consulta Finalizada')
+                            ->body('El turno ha sido marcado como Atendido.')
+                            ->success()
+                            ->send();
+                    }),
+
+                // Ver ficha del paciente
+                \Filament\Actions\Action::make('ver_paciente')
+                    ->label('Ficha')
+                    ->icon(LucideIcon::User)
+                    ->color('gray')
+                    ->url(fn (Appointment $record) => PatientResource::getUrl('view', ['record' => $record->patient_id])),
+
+                // Editar turno
                 \Filament\Actions\Action::make('gestionar')
-                    ->label('Ver')
+                    ->label('Editar')
                     ->icon(LucideIcon::SquarePen)
                     ->color('gray')
-                    ->url(fn(Appointment $record) => AppointmentResource::getUrl('edit', ['record' => $record])),
+                    ->url(fn (Appointment $record) => AppointmentResource::getUrl('edit', ['record' => $record])),
             ])
-            ->paginated(false); // Lista compacta sin páginas
+            ->paginated(false);
     }
 }

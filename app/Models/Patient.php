@@ -2,19 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Patient extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
-        'personal_data_id', 
-        'active'
+        'personal_data_id',
+        'active',
     ];
 
     protected $casts = [
@@ -22,7 +23,7 @@ class Patient extends Model
     ];
 
     // ==================== RELACIONES ====================
-    
+
     public function personalData(): BelongsTo
     {
         return $this->belongsTo(PersonalData::class);
@@ -38,18 +39,23 @@ class Patient extends Model
         return $this->hasMany(Measurement::class);
     }
 
+    public function clinicalNotes(): HasManyThrough
+    {
+        return $this->hasManyThrough(ClinicalNote::class, Appointment::class);
+    }
+
     public function gender(): BelongsTo
     {
         return $this->belongsTo(Gender::class);
     }
 
     // ==================== ACCESSORS ====================
-    
+
     public function fullName(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->personalData 
-                ? trim($this->personalData->first_name . ' ' . $this->personalData->last_name)
+            get: fn () => $this->personalData
+                ? trim($this->personalData->first_name.' '.$this->personalData->last_name)
                 : 'Sin nombre'
         );
     }
@@ -78,14 +84,14 @@ class Patient extends Model
     public function age(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->personalData?->birth_date 
-                ? $this->personalData->birth_date->age 
+            get: fn () => $this->personalData?->birth_date
+                ? $this->personalData->birth_date->age
                 : null
         );
     }
 
     // ==================== SCOPES ====================
-    
+
     public function scopeActive($query)
     {
         return $query->where('active', true);
@@ -95,8 +101,8 @@ class Patient extends Model
     {
         return $query->whereHas('personalData', function ($q) use ($search) {
             $q->where('first_name', 'like', "%{$search}%")
-              ->orWhere('last_name', 'like', "%{$search}%")
-              ->orWhere('dni', 'like', "%{$search}%");
+                ->orWhere('last_name', 'like', "%{$search}%")
+                ->orWhere('dni', 'like', "%{$search}%");
         });
     }
 }
