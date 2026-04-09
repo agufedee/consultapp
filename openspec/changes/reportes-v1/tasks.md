@@ -34,17 +34,33 @@
 
 ## 3. Interfaz de Usuario en Filament
 
-- [ ] **Crear la página de Reportes**:
-    - ❌ Not started
-- [ ] **Crear Widgets de Métricas**:
-    - ❌ Not started
-- [ ] **Integrar página y widgets en el Panel**:
-    - ❌ Not started
-- [ ] **Implementar tablas de detalle**:
-    - ❌ Not started
-- [ ] **Implementar Filtros**:
-    - ❌ Not started
-- [ ] **Implementar Exportación CSV**:
-    - ❌ Not started
-- [ ] **Crear tests E2E**:
-    - ❌ Not started
+- [x] **Crear la página de Reportes**:
+    - ✅ Created `app/Filament/Pages/Reports.php` with Filament Page
+    - ✅ Implements tabs for Nuevos, Retención, Ausentismo
+    - ✅ Filters: Date range, reason, status
+- [x] **Crear Widgets de Métricas**:
+    - ✅ Created `app/Filament/Widgets/NewPatientsWidget.php` (StatsOverview)
+    - ✅ Created `app/Filament/Widgets/RetentionWidget.php` (StatsOverview)
+    - ✅ Created `app/Filament/Widgets/AbsenteeismWidget.php` (StatsOverview)
+    - ✅ All widgets connect to ReportService
+- [x] **Integrar página y widgets en el Panel**:
+    - ✅ Added Reports page to ConsultorioPanelProvider
+    - ✅ Navigation icon: heroicon-o-chart-bar
+    - ✅ Navigation label: Reportes
+- [x] **Implementar tablas de detalle**:
+    - ✅ New Patients table in blade view
+    - ✅ Retention table with % and status badges
+    - ✅ Absenteeism table with day/time/reason grouping
+- [x] **Implementar Filtros**:
+    - ✅ Date range filter (start/end dates)
+    - ✅ Reason filter (dynamic dropdown)
+    - ✅ Status filter (from AppointmentStatus enum)
+    - ✅ Filters reactive and applied to all data
+- [x] **Implementar Exportación CSV**:
+    - ✅ Export CSV for New Patients (exportNewPatients method)
+    - ✅ Export CSV for Retention (exportRetention method)
+    - ✅ Export CSV for Absenteeism (exportAbsenteeism method)
+- [x] **Crear tests E2E**:
+    - ✅ Created `tests/Feature/ReportsPageFeatureTest.php` with 14 E2E tests
+    - ✅ Tests cover: page access, tabs, data display, filters, exports, empty states, time slots
+    - ✅ Tests verify: authentication, correct metrics, CSV structure, multiple patients

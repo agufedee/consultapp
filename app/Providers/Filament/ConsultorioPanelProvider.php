@@ -14,14 +14,12 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
-use Illuminate\Support\HtmlString;
-
 
 class ConsultorioPanelProvider extends PanelProvider
 {
-
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -31,10 +29,10 @@ class ConsultorioPanelProvider extends PanelProvider
             ->login()
             ->favicon(asset('images/logo.png'))
             ->brandName('ConsultApp')
-            ->brandLogo(fn() => new HtmlString('
+            ->brandLogo(fn () => new HtmlString('
             <div style="display: flex; align-items: center; gap: 15px;">
                 <img 
-                    src="' . asset('images/logo.png') . '" 
+                    src="'.asset('images/logo.png').'" 
                     alt="Logo ConsultApp" 
                     style="height: 40px; width: auto;" 
                 />
@@ -59,6 +57,7 @@ class ConsultorioPanelProvider extends PanelProvider
 
             ->pages([
                 \App\Filament\Pages\Dashboard::class,
+                \App\Filament\Pages\Reports::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([])
