@@ -7,15 +7,16 @@ use App\Models\Patient;
 use BackedEnum;
 use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
 use Filament\Forms;
-use Filament\Forms\Components\Placeholder;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\HtmlString;
 
 class PatientResource extends Resource
 {
@@ -195,60 +196,59 @@ class PatientResource extends Resource
     {
         return $schema
             ->components([
-                // Usamos una Sección que ocupe TODO el ancho
-                Section::make('Ficha del Paciente')
-                    ->icon('heroicon-o-identification')
+                Section::make()
                     ->schema([
-                        // Nivel 1: Encabezado (Foto/Nombre y Estado)
                         Grid::make(4)->schema([
                             Group::make([
-                                Placeholder::make('full_name')
+                                ImageEntry::make('avatar')
                                     ->hiddenLabel()
-                                    ->content(fn (Patient $record) => new HtmlString(
-                                        "<div class='flex items-center gap-4'>
-                                        <div class='h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-500'>
-                                            ".substr($record->first_name, 0, 1).substr($record->last_name, 0, 1)."
-                                        </div>
-                                        <div>
-                                            <h2 class='text-2xl font-bold'>{$record->full_name}</h2>
-                                            <p class='text-sm text-gray-500'>Paciente registrado hace {$record->created_at->diffForHumans()}</p>
-                                        </div>
-                                    </div>"
-                                    )),
-                            ])->columnSpan(3), // Ocupa 3/4 del ancho
+                                    ->state(fn (Patient $record) => 'https://ui-avatars.com/api/?name='.urlencode($record->full_name).'&color=FFFFFF&background=09090b&size=128')
+                                    ->circular(),
 
-                            Placeholder::make('active')
+                                TextEntry::make('full_name')
+                                    ->hiddenLabel()
+                                    ->size(TextEntry\TextEntrySize::Large)
+                                    ->weight(FontWeight::Bold)
+                                    ->description(fn (Patient $record) => "Paciente registrado hace {$record->created_at->diffForHumans()}"),
+                            ])->columnSpan(3),
+
+                            TextEntry::make('active')
                                 ->hiddenLabel()
-                                ->content(fn (Patient $record) => new HtmlString(
-                                    $record->active
-                                        ? '<div class="flex justify-end"><span class="px-3 py-1 rounded-full bg-green-50 text-green-700 text-sm font-bold border border-green-200">● Activo</span></div>'
-                                        : '<div class="flex justify-end"><span class="px-3 py-1 rounded-full bg-gray-50 text-gray-600 text-sm font-bold border border-gray-200">○ Inactivo</span></div>'
-                                ))->columnSpan(1), // Ocupa 1/4 (a la derecha)
+                                ->badge()
+                                ->alignEnd()
+                                ->color(fn ($state) => $state ? 'success' : 'gray')
+                                ->icon(fn ($state) => $state ? 'heroicon-m-check-circle' : 'heroicon-m-x-circle')
+                                ->formatStateUsing(fn ($state) => $state ? 'Activo' : 'Inactivo')
+                                ->columnSpan(1),
                         ]),
 
-                        // Separador visual
                         Group::make()->schema([])->extraAttributes(['class' => 'border-t border-gray-100 my-4']),
 
-                        // Nivel 2: Datos en 3 columnas (aprovechando el ancho)
                         Grid::make(3)->schema([
-                            Placeholder::make('phone')
+                            TextEntry::make('phone')
                                 ->label('Teléfono')
                                 ->icon('heroicon-m-phone')
-                                ->content(fn ($record) => $record->phone ?? '-'),
+                                ->iconColor('primary')
+                                ->placeholder('-')
+                                ->state(fn ($record) => $record->phone),
 
-                            Placeholder::make('email')
+                            TextEntry::make('email')
                                 ->label('Email')
                                 ->icon('heroicon-m-envelope')
-                                ->content(fn ($record) => $record->email ?? '-'),
+                                ->iconColor('primary')
+                                ->placeholder('-')
+                                ->state(fn ($record) => $record->email),
 
-                            Placeholder::make('personalData.birth_date')
+                            TextEntry::make('personalData.birth_date')
                                 ->label('Fecha de Nacimiento')
                                 ->icon('heroicon-m-calendar')
-                                ->content(fn ($record) => $record->personalData?->birth_date
-                                    ? $record->personalData->birth_date->format('d/m/Y').' ('.$record->personalData->birth_date->age.' años)'
-                                    : '-'),
+                                ->iconColor('primary')
+                                ->placeholder('-')
+                                ->formatStateUsing(fn ($state, $record) => $state
+                                    ? $state->format('d/m/Y').' ('.$record->personalData->birth_date->age.' años)'
+                                    : '-'
+                                ),
                         ]),
-
                     ])
                     ->columnSpanFull(),
             ]);
