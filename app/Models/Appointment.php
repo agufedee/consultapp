@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,7 +21,7 @@ class Appointment extends Model
         'reason',
         'start_date',
         'end_date',
-        'status_id',
+        'status',
         'cancellation_reason',
     ];
 
@@ -28,6 +29,7 @@ class Appointment extends Model
         'send_reminder' => 'boolean',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'status' => AppointmentStatus::class,
     ];
 
     // Relaciones
@@ -39,11 +41,6 @@ class Appointment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function status(): BelongsTo
-    {
-        return $this->belongsTo(Status::class, 'status_id');
     }
 
     public function clinicalNote(): HasOne
@@ -70,6 +67,6 @@ class Appointment extends Model
 
     public function scopeByStatus($query, $statusId)
     {
-        return $query->where('status_id', $statusId);
+        return $query->where('status', $statusId);
     }
 }
