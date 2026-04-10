@@ -182,6 +182,10 @@ class Reports extends Page
 
         // Data
         foreach ($data as $appointment) {
+            // Defensive check for patient and user relationships
+            if (! $appointment->patient || ! $appointment->user) {
+                continue;
+            }
             fputcsv($csv, [
                 $appointment->patient_id,
                 $appointment->patient->name,
