@@ -65,8 +65,8 @@
                             <p class="text-sm font-medium text-gray-600">Pacientes Nuevos</p>
                             <p class="text-3xl font-bold text-primary-600">{{ $this->getNewPatients()->count() }}</p>
                             <p class="text-xs text-gray-500">
-                                {{ $filterStartDate?->format('d/m/Y') ?? 'Inicio' }} al 
-                                {{ $filterEndDate?->format('d/m/Y') ?? 'Fin' }}
+                                {{ $filterStartDate ? \Illuminate\Support\Carbon::parse($filterStartDate)->format('d/m/Y') : 'Inicio' }} al 
+                                {{ $filterEndDate ? \Illuminate\Support\Carbon::parse($filterEndDate)->format('d/m/Y') : 'Fin' }}
                             </p>
                         </div>
                     </div>
@@ -89,21 +89,21 @@
                             @forelse($this->getNewPatients() as $appointment)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4">{{ $appointment->patient_id }}</td>
-                                    <td class="px-6 py-4">{{ $appointment->patient->name }}</td>
-                                    <td class="px-6 py-4">{{ $appointment->user->name }}</td>
+                                    <td class="px-6 py-4">{{ $appointment->patient?->name ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4">{{ $appointment->user?->name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4">{{ $appointment->reason ?? 'N/A' }}</td>
                                     <td class="px-6 py-4">{{ $appointment->start_date->format('d/m/Y H:i') }}</td>
                                     <td class="px-6 py-4">
                                         <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
                                             :class="{
-                                                'bg-green-100 text-green-800': '{{ $appointment->status->value }}' === 'Atendido',
-                                                'bg-blue-100 text-blue-800': '{{ $appointment->status->value }}' === 'Confirmado',
-                                                'bg-gray-100 text-gray-800': '{{ $appointment->status->value }}' === 'Agendado',
-                                                'bg-red-100 text-red-800': '{{ $appointment->status->value }}' === 'Cancelado',
-                                                'bg-yellow-100 text-yellow-800': '{{ $appointment->status->value }}' === 'Ausente',
+                                                'bg-green-100 text-green-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Atendido',
+                                                'bg-blue-100 text-blue-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Confirmado',
+                                                'bg-gray-100 text-gray-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Agendado',
+                                                'bg-red-100 text-red-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Cancelado',
+                                                'bg-yellow-100 text-yellow-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Ausente',
                                             }"
                                         >
-                                            {{ $appointment->status->value }}
+                                            {{ $appointment->status?->value ?? $appointment->status ?? 'N/A' }}
                                         </span>
                                     </td>
                                 </tr>
@@ -208,8 +208,8 @@
                             <p class="text-sm font-medium text-gray-600">Ausencias Totales</p>
                             <p class="text-3xl font-bold text-yellow-600">{{ $this->getAbsenteeism()->count() }}</p>
                             <p class="text-xs text-gray-500">
-                                {{ $filterStartDate?->format('d/m/Y') ?? 'Inicio' }} al 
-                                {{ $filterEndDate?->format('d/m/Y') ?? 'Fin' }}
+                                {{ $filterStartDate ? \Illuminate\Support\Carbon::parse($filterStartDate)->format('d/m/Y') : 'Inicio' }} al 
+                                {{ $filterEndDate ? \Illuminate\Support\Carbon::parse($filterEndDate)->format('d/m/Y') : 'Fin' }}
                             </p>
                         </div>
                     </div>

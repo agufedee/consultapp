@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Patients\RelationManagers;
 
+use App\Enums\AppointmentStatus;
 use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -70,9 +71,8 @@ class MeasurementsRelationManager extends RelationManager
                                     'id',
                                     fn ($query, $get, $livewire) => $query
                                         ->where('patient_id', $livewire->ownerRecord->id)
-                                        ->with(['status'])
                                 )
-                                ->getOptionLabelFromRecordUsing(fn ($record) => $record->start_date->format('d/m/Y H:i').' - '.$record->status->status_name
+                                ->getOptionLabelFromRecordUsing(fn ($record) => $record->start_date->format('d/m/Y H:i').' - '.($record->status instanceof AppointmentStatus ? $record->status->value : (string) $record->status)
                                 )
                                 ->searchable()
                                 ->preload(),

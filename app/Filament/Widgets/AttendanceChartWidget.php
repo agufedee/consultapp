@@ -3,30 +3,31 @@
 namespace App\Filament\Widgets;
 
 use App\Enums\AppointmentStatus;
-use Filament\Widgets\ChartWidget;
 use App\Models\Appointment;
+use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
 
 class AttendanceChartWidget extends ChartWidget
 {
     protected static bool $isLazy = true;
+
     protected ?string $heading = 'Asistencia Semanal';
 
     // Orden 3 para que aparezca después de la tabla y al lado de las métricas
     protected static ?int $sort = 3;
 
     // Ocupa 1 columna (la mitad de la pantalla abajo)
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected ?string $maxHeight = '250px';
 
     protected function getData(): array
     {
         $start = now()->startOfWeek();
-        $end   = now()->endOfWeek();
+        $end = now()->endOfWeek();
 
         $rows = Appointment::query()
-            ->whereHas('status', fn($q) => $q->where('status_name', AppointmentStatus::ATENDIDO->value))
+            ->where('status', AppointmentStatus::ATENDIDO->value)
             ->whereBetween('start_date', [$start, $end])
             ->selectRaw('CAST(start_date AS DATE) as day, COUNT(*) as total')
             ->groupByRaw('CAST(start_date AS DATE)')
@@ -34,7 +35,7 @@ class AttendanceChartWidget extends ChartWidget
             ->get();
 
         // Inicializar lunes a domingo en 0
-        $dataByDay = collect(range(0, 6))->map(fn() => 0)->toArray();
+        $dataByDay = collect(range(0, 6))->map(fn () => 0)->toArray();
 
         foreach ($rows as $row) {
             $index = Carbon::parse($row->day)->dayOfWeekIso - 1;
@@ -59,5 +60,3 @@ class AttendanceChartWidget extends ChartWidget
         return 'bar';
     }
 }
-
-

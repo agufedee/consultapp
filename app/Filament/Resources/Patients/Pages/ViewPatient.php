@@ -2,15 +2,16 @@
 
 namespace App\Filament\Resources\Patients\Pages;
 
+use App\Enums\AppointmentStatus;
 use App\Filament\Resources\Patients\PatientResource;
+use App\Models\Appointment;
 use Filament\Actions\EditAction;
-use Filament\Resources\Pages\ViewRecord;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Grid;
-use App\Models\Appointment;
-use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Grid;
+use Illuminate\Support\Facades\Auth;
 
 class ViewPatient extends ViewRecord
 {
@@ -22,14 +23,14 @@ class ViewPatient extends ViewRecord
             EditAction::make(),
 
             // --- CORRECCIÓN: Usamos Action genérica, no CreateAction ---
-            \Filament\Actions\Action::make('agendarTurno') 
+            \Filament\Actions\Action::make('agendarTurno')
                 ->label('Agendar Turno')
                 ->icon('heroicon-o-calendar')
                 ->color('primary')
                 ->modalHeading('Nuevo Turno para este Paciente')
                 ->modalWidth('2xl')
                 ->modalSubmitActionLabel('Agendar')
-                
+
                 // 1. EL FORMULARIO
                 ->form([
                     Grid::make(2)->schema([
@@ -63,19 +64,16 @@ class ViewPatient extends ViewRecord
                         ->options(\App\Models\User::all()->pluck('name', 'id'))
                         ->default(Auth::id())
                         ->required(),
-                        
-                    
+
                 ])
 
                 // 2. LA LÓGICA DE GUARDADO MANUAL
                 ->action(function (array $data) {
                     // 1. Inyectamos el ID del paciente actual
                     $data['patient_id'] = $this->record->id;
-                    
-                    // 2. CORRECCIÓN: Inyectamos el Estado manualmente
-                    // Asumimos que 1 es 'Agendado'. Si no sabes el ID, usa: 
-                    // \App\Models\Status::where('status_name', 'Agendado')->first()->id;
-                    $data['status_id'] = 1; 
+
+                    // 2. Inyectamos estado inicial como enum
+                    $data['status'] = AppointmentStatus::AGENDADO->value;
 
                     // 3. Creamos el turno
                     Appointment::create($data);
@@ -88,7 +86,7 @@ class ViewPatient extends ViewRecord
         ];
     }
 
-    public function getMaxContentWidth(): string 
+    public function getMaxContentWidth(): string
     {
         return 'full';
     }

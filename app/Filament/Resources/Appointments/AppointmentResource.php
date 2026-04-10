@@ -71,10 +71,10 @@ class AppointmentResource extends Resource
                                 ])
                                 ->required(),
 
-                            Select::make('status_id')
+                            Select::make('status')
                                 ->label('Estado')
-                                ->options(\App\Models\Status::all()->pluck('status_name', 'id'))
-                                ->default(fn () => \App\Models\Status::first()?->id)
+                                ->options(AppointmentStatus::toArray())
+                                ->default(AppointmentStatus::AGENDADO->value)
                                 ->required()
                                 ->selectablePlaceholder(false)
                                 ->native(false),
@@ -129,7 +129,7 @@ class AppointmentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['patient.personalData', 'status', 'user']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['patient.personalData', 'user']))
             ->columns([
                 Tables\Columns\TextColumn::make('patient_full_name') // Nombre arbitrario
                     ->label('Paciente')
@@ -151,10 +151,11 @@ class AppointmentResource extends Resource
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('status.status_name')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
-                    ->color(fn (string $state): string => AppointmentStatus::fromName($state)?->getColor() ?? 'gray'),
+                    ->formatStateUsing(fn ($state): string => $state instanceof AppointmentStatus ? $state->value : (string) $state)
+                    ->color(fn ($state): string => AppointmentStatus::fromName($state instanceof AppointmentStatus ? $state->value : (string) $state)?->getColor() ?? 'gray'),
             ])
             ->defaultSort('start_date', 'desc')
             ->filters([])

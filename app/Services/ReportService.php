@@ -43,20 +43,22 @@ class ReportService
         // Build the cohort: patients whose first ATTENDED appointment is in the date range
         $cohort = $this->getNewPatients($startDate, $endDate);
 
+        // Eager load patients for the entire cohort to prevent N+1 queries
+        $cohort->load('patient');
+
         if ($cohort->isEmpty()) {
             return collect();
         }
 
-        $cohortPatientIds = $cohort->pluck('patient_id')->unique();
-        $retentionDeadline = $startDate->copy()->addDays($days);
-
-        // For each patient in the cohort, check if they have a second ATTENDED appointment
-        // within N days of their first appointment
         $retentionData = $cohort->map(function ($firstAppointment) use ($days) {
+            // Null check for patient relationship
+            if (! $firstAppointment->patient) {
+                return null; // Skip this record if patient is missing
+            }
+
             $patient = $firstAppointment->patient;
             $cohortEndDate = $firstAppointment->start_date->copy()->addDays($days);
 
-            // Get the second ATTENDED appointment after the first one within the retention window
             $secondAppointment = Appointment::where('patient_id', $firstAppointment->patient_id)
                 ->where('status', AppointmentStatus::ATENDIDO->value)
                 ->whereBetween('start_date', [
@@ -77,7 +79,8 @@ class ReportService
             ];
         });
 
-        return $retentionData->values();
+        // Filter out any null records from the mapping and re-index the collection
+        return $retentionData->filter()->values();
     }
 
     /**
@@ -88,7 +91,7 @@ class ReportService
      */
     public function getAbsenteeismSummary(Carbon $startDate, Carbon $endDate): Collection
     {
-        // Get all ABSENT appointments in the date range
+        // Get all ABSENT appointments in the date range and eager load patients
         $appointments = Appointment::where('status', AppointmentStatus::AUSENTE->value)
             ->whereBetween('start_date', [$startDate->startOfDay(), $endDate->endOfDay()])
             ->with('patient')
@@ -96,6 +99,11 @@ class ReportService
 
         // Enrich with metadata for grouping
         return $appointments->map(function ($appointment) {
+            // Null check for patient relationship
+            if (! $appointment->patient) {
+                return null; // Skip if patient data is missing
+            }
+
             $hour = $appointment->start_date->hour;
             $dayOfWeek = [
                 0 => 'Domingo',
@@ -118,7 +126,7 @@ class ReportService
                 'reason' => $appointment->reason,
                 'appointment_date' => $appointment->start_date,
             ];
-        })->values();
+        })->filter()->values();
     }
 
     /**

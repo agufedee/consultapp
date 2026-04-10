@@ -2,19 +2,18 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Pages\Dashboard as BaseDashboard;
-use Filament\Actions\Action;
-use Filament\Actions\CreateAction;
 use App\Filament\Resources\Appointments\AppointmentResource;
-use Illuminate\Support\Facades\Auth;
 use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
+use Filament\Actions\Action;
+use Filament\Pages\Dashboard as BaseDashboard;
+use Illuminate\Support\Facades\Auth;
 
 class Dashboard extends BaseDashboard
 {
     // Cambiamos el título
     public function getTitle(): string
     {
-        return "¡Hola, " . Auth::user()->name . "!";
+        return '¡Hola, '.Auth::user()->name.'!';
     }
 
     // Agregamos los botones del Header

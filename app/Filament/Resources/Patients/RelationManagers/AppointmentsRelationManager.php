@@ -53,10 +53,11 @@ class AppointmentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('reason')
                     ->label('Motivo'),
 
-                Tables\Columns\TextColumn::make('status.status_name')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
-                    ->color(fn (string $state): string => AppointmentStatus::fromName($state)?->getColor() ?? 'gray'),
+                    ->formatStateUsing(fn ($state): string => $state instanceof AppointmentStatus ? $state->value : (string) $state)
+                    ->color(fn ($state): string => AppointmentStatus::fromName($state instanceof AppointmentStatus ? $state->value : (string) $state)?->getColor() ?? 'gray'),
             ])
             ->headerActions([
                 \Filament\Actions\CreateAction::make()
@@ -164,6 +165,3 @@ class AppointmentsRelationManager extends RelationManager
             ->defaultSort('start_date', 'desc');
     }
 }
-
-
-

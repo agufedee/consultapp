@@ -2,19 +2,20 @@
 
 namespace App\Filament\Resources\Appointments\Widgets;
 
-use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
-use App\Models\Appointment;
+use App\Enums\AppointmentStatus;
 use App\Filament\Resources\Appointments\AppointmentResource;
-use Saade\FilamentFullCalendar\Actions; // Acciones del plugin
-use Illuminate\Database\Eloquent\Model;
-use Filament\Schemas\Schema;
+use App\Models\Appointment;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
+// Acciones del plugin
+use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
 
 class AppointmentCalendarWidget extends FullCalendarWidget
 {
     protected static bool $isLazy = true;
+
     public Model|string|null $model = Appointment::class;
 
     /**
@@ -23,23 +24,23 @@ class AppointmentCalendarWidget extends FullCalendarWidget
     public function fetchEvents(array $fetchInfo): array
     {
         $start = Carbon::parse($fetchInfo['start'])->startOfDay();
-        $end   = Carbon::parse($fetchInfo['end'])->endOfDay();
+        $end = Carbon::parse($fetchInfo['end'])->endOfDay();
 
         return Appointment::query()
-            ->with(['patient', 'status'])
+            ->with(['patient'])
             ->whereBetween('start_date', [$start, $end])
             ->get()
-            ->map(fn(Appointment $event) => [
+            ->map(fn (Appointment $event) => [
                 'id' => $event->id,
                 'title' => $event->patient?->full_name ?? 'Sin Paciente',
                 'start' => $event->start_date,
                 'end' => $event->end_date,
-                'color' => match ($event->status?->status_name) {
-                    'Agendado' => '#6b7280',
-                    'Confirmado' => '#3b82f6',
-                    'Atendido' => '#22c55e',
-                    'Cancelado' => '#ef4444',
-                    'Ausente' => '#f59e0b',
+                'color' => match ($event->status instanceof AppointmentStatus ? $event->status->value : (string) $event->status) {
+                    AppointmentStatus::AGENDADO->value => '#6b7280',
+                    AppointmentStatus::CONFIRMADO->value => '#3b82f6',
+                    AppointmentStatus::ATENDIDO->value => '#22c55e',
+                    AppointmentStatus::CANCELADO->value => '#ef4444',
+                    AppointmentStatus::AUSENTE->value => '#f59e0b',
                     default => '#3b82f6',
                 },
             ])
@@ -50,7 +51,7 @@ class AppointmentCalendarWidget extends FullCalendarWidget
      * 2. Definir el Formulario del Modal (Overlay)
      * ¡Reutilizamos el del Recurso para no escribirlo dos veces!
      */
-    public function getSchema(string $name): Schema|null
+    public function getSchema(string $name): ?Schema
     {
         // Obtenemos la estructura base y le inyectamos tu formulario
         $schema = parent::getSchema($name);
@@ -62,6 +63,7 @@ class AppointmentCalendarWidget extends FullCalendarWidget
 
         return null;
     }
+
     public function onEventClick(array $info): void
     {
         $id = $info['event']['id'] ?? $info['id'] ?? null;
@@ -76,14 +78,12 @@ class AppointmentCalendarWidget extends FullCalendarWidget
         }
     }
 
-
-
     /**
      * 3. Configurar Acciones (Botones)
      */
     protected function headerActions(): array
     {
-        return [ // Ancho grande para tu diseño de 3 columnas
+        return [// Ancho grande para tu diseño de 3 columnas
         ];
     }
 
@@ -96,7 +96,7 @@ class AppointmentCalendarWidget extends FullCalendarWidget
                 ->modalHeading('Editar Turno')
                 ->modalWidth('5xl')
                 // Conectamos tu formulario de 2 columnas
-                ->form(fn(Schema $schema) => AppointmentResource::form($schema))
+                ->form(fn (Schema $schema) => AppointmentResource::form($schema))
 
                 // A. Cargar datos al abrir el modal
                 ->mountUsing(function ($form, array $arguments) {

@@ -33,7 +33,6 @@ class ClinicalNotesRelationManager extends RelationManager
                                 'id',
                                 fn ($query, $get, $livewire) => $query
                                     ->whereHas('patient', fn ($q) => $q->where('id', $livewire->ownerRecord->id))
-                                    ->with(['status'])
                             )
                             ->getOptionLabelFromRecordUsing(fn ($record) => $record->start_date->format('d/m/Y H:i').' - '.$record->reason
                             )

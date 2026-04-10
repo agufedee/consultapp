@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\Appointments\Schemas;
 
+use App\Enums\AppointmentStatus;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class AppointmentForm
@@ -25,8 +25,8 @@ class AppointmentForm
                     ->required(),
                 DateTimePicker::make('end_date')
                     ->required(),
-                Select::make('status_id')
-                    ->relationship('status', 'id')
+                Select::make('status')
+                    ->options(AppointmentStatus::toArray())
                     ->required(),
                 TextInput::make('cancellation_reason'),
             ]);

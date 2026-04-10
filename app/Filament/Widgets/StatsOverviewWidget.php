@@ -2,11 +2,12 @@
 
 namespace App\Filament\Widgets;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Patient;
+use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
 
 class StatsOverviewWidget extends BaseWidget
 {
@@ -24,8 +25,7 @@ class StatsOverviewWidget extends BaseWidget
         $absentAppointments = Appointment::query()
             ->whereMonth('start_date', now()->month)
             ->whereYear('start_date', now()->year)
-            // Filtramos usando la relación: estado cuyo nombre sea 'Ausente'
-            ->whereHas('status', fn($query) => $query->where('status_name', 'Ausente'))
+            ->where('status', AppointmentStatus::AUSENTE->value)
             ->count();
 
         // 3. Calcular porcentaje (protegido contra división por cero)
@@ -40,11 +40,11 @@ class StatsOverviewWidget extends BaseWidget
                 ->color('success'),
 
             Stat::make('Turnos este Mes', $totalAppointments)
-                ->description('Agendados en ' . now()->monthName)
+                ->description('Agendados en '.now()->monthName)
                 ->icon(LucideIcon::CalendarDays)
                 ->color('info'),
 
-            Stat::make('Tasa de Ausencia', $absenceRate . '%')
+            Stat::make('Tasa de Ausencia', $absenceRate.'%')
                 ->description('Promedio mensual')
                 ->icon(LucideIcon::TriangleAlert)
                 ->color($absenceRate > 15 ? 'danger' : 'success'),

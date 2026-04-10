@@ -9,12 +9,16 @@ use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 
-class Reports extends Page
+class Reports extends Page implements HasForms
 {
+    use InteractsWithForms;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
 
     protected static ?string $navigationLabel = 'Reportes';
@@ -23,23 +27,26 @@ class Reports extends Page
 
     protected string $view = 'filament.pages.reports';
 
-    public ?Carbon $filterStartDate = null;
+    public ?string $filterStartDate = null;
 
-    public ?Carbon $filterEndDate = null;
+    public ?string $filterEndDate = null;
 
     public ?string $filterReason = null;
 
     public ?string $filterStatus = null;
 
-    private ReportService $reportService;
-
     public function mount(): void
     {
-        $this->reportService = app(ReportService::class);
-
         // Set default dates: current month
-        $this->filterStartDate = now()->startOfMonth();
-        $this->filterEndDate = now()->endOfMonth();
+        $this->filterStartDate = now()->startOfMonth()->toDateString();
+        $this->filterEndDate = now()->endOfMonth()->toDateString();
+
+        $this->form->fill([
+            'filterStartDate' => $this->filterStartDate,
+            'filterEndDate' => $this->filterEndDate,
+            'filterReason' => $this->filterReason,
+            'filterStatus' => $this->filterStatus,
+        ]);
     }
 
     /**
@@ -60,8 +67,8 @@ class Reports extends Page
                 ->label('Limpiar Filtros')
                 ->icon('heroicon-m-x-mark')
                 ->action(function () {
-                    $this->filterStartDate = now()->startOfMonth();
-                    $this->filterEndDate = now()->endOfMonth();
+                    $this->filterEndDate = now()->endOfMonth()->toDateString();
+                    $this->filterStartDate = now()->startOfMonth()->toDateString();
                     $this->filterReason = null;
                     $this->filterStatus = null;
                     Notification::make()
@@ -91,14 +98,12 @@ class Reports extends Page
                 ->placeholder('Todos')
                 ->options($this->getReasonOptions())
                 ->searchable()
-                ->clearable()
                 ->reactive(),
 
             Select::make('filterStatus')
                 ->label('Estado')
                 ->placeholder('Todos')
                 ->options(AppointmentStatus::toArray())
-                ->clearable()
                 ->reactive(),
         ];
     }
@@ -123,10 +128,10 @@ class Reports extends Page
      */
     public function getNewPatients(): Collection
     {
-        $start = $this->filterStartDate ?? now()->startOfMonth();
-        $end = $this->filterEndDate ?? now()->endOfMonth();
+        $start = $this->filterStartDate ? Carbon::parse($this->filterStartDate) : now()->startOfMonth();
+        $end = $this->filterEndDate ? Carbon::parse($this->filterEndDate) : now()->endOfMonth();
 
-        $patients = $this->reportService->getNewPatients($start, $end);
+        $patients = app(ReportService::class)->getNewPatients($start, $end);
 
         // Apply additional filters if needed
         if ($this->filterReason) {
@@ -141,10 +146,10 @@ class Reports extends Page
      */
     public function getRetention(): Collection
     {
-        $start = $this->filterStartDate ?? now()->startOfMonth();
-        $end = $this->filterEndDate ?? now()->endOfMonth();
+        $start = $this->filterStartDate ? Carbon::parse($this->filterStartDate) : now()->startOfMonth();
+        $end = $this->filterEndDate ? Carbon::parse($this->filterEndDate) : now()->endOfMonth();
 
-        $retention = $this->reportService->getPatientRetention($start, $end, 30);
+        $retention = app(ReportService::class)->getPatientRetention($start, $end, 30);
 
         return $retention;
     }
@@ -154,10 +159,10 @@ class Reports extends Page
      */
     public function getAbsenteeism(): Collection
     {
-        $start = $this->filterStartDate ?? now()->subDays(30);
-        $end = $this->filterEndDate ?? now();
+        $start = $this->filterStartDate ? Carbon::parse($this->filterStartDate) : now()->subDays(30);
+        $end = $this->filterEndDate ? Carbon::parse($this->filterEndDate) : now();
 
-        $absences = $this->reportService->getAbsenteeismSummary($start, $end);
+        $absences = app(ReportService::class)->getAbsenteeismSummary($start, $end);
 
         // Apply reason filter if needed
         if ($this->filterReason) {
