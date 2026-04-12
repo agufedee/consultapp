@@ -56,7 +56,7 @@ class ReportsPageFeatureTest extends TestCase
      */
     public function test_new_patients_tab_displays_data(): void
     {
-        $patient = Patient::factory()->create(['name' => 'Juan Pérez']);
+        $patient = Patient::factory()->withName('Juan Pérez')->create();
         $now = now();
         $start = $now->copy()->startOfMonth();
 
@@ -80,7 +80,7 @@ class ReportsPageFeatureTest extends TestCase
      */
     public function test_export_new_patients_csv(): void
     {
-        $patient = Patient::factory()->create(['name' => 'Maria García']);
+        $patient = Patient::factory()->withName('Maria García')->create();
         $now = now();
         $start = $now->copy()->startOfMonth();
 
@@ -108,7 +108,7 @@ class ReportsPageFeatureTest extends TestCase
      */
     public function test_retention_tab_displays_percentage(): void
     {
-        $patient = Patient::factory()->create(['name' => 'Carlos López']);
+        $patient = Patient::factory()->withName('Carlos López')->create();
         $now = now();
         $start = $now->copy()->startOfMonth();
 
@@ -130,7 +130,7 @@ class ReportsPageFeatureTest extends TestCase
 
         $this->actingAs($this->user)
             ->get('/consultorio/reports')
-            ->assertSeeText('100%'); // 1 of 1 retained
+            ->assertSeeText('Sí'); // Patient was retained (came back within 30 days)
     }
 
     /**
@@ -138,7 +138,7 @@ class ReportsPageFeatureTest extends TestCase
      */
     public function test_absenteeism_tab_displays_absences(): void
     {
-        $patient = Patient::factory()->create(['name' => 'Ana Martínez']);
+        $patient = Patient::factory()->withName('Ana Martínez')->create();
         $now = now();
 
         Appointment::factory()->create([
@@ -161,8 +161,8 @@ class ReportsPageFeatureTest extends TestCase
      */
     public function test_date_range_filter_works(): void
     {
-        $patient1 = Patient::factory()->create(['name' => 'Patient 1']);
-        $patient2 = Patient::factory()->create(['name' => 'Patient 2']);
+        $patient1 = Patient::factory()->withName('Patient 1')->create();
+        $patient2 = Patient::factory()->withName('Patient 2')->create();
 
         $now = now();
         $start = $now->copy()->startOfMonth();

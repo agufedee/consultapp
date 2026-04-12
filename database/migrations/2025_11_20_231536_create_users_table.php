@@ -10,18 +10,19 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            
+
             // Campos de autorización y rol
             $table->foreignId('role_id')->constrained('roles');
             $table->boolean('active')->default(true);
-            
+
             // Campos de autenticación estándar de Laravel
             $table->string('name'); // Nombre completo para mostrar en UI
             $table->string('email')->unique(); // Identificador de login
             $table->string('password'); // Hash de la clave
             $table->rememberToken();
-            
+
             $table->timestamps();
+            $table->timestamp('email_verified_at')->nullable();
         });
     }
 

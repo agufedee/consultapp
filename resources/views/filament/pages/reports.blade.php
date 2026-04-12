@@ -4,26 +4,8 @@
         <div class="rounded-lg bg-white p-6 shadow-sm">
             <h3 class="text-lg font-semibold">Filtros</h3>
             
-            <form wire:submit="mount" class="mt-4 space-y-4">
-                <div class="grid gap-4 md:grid-cols-4">
-                    <div>
-                        {{ $this->form->getComponent('filterStartDate') }}
-                    </div>
-                    <div>
-                        {{ $this->form->getComponent('filterEndDate') }}
-                    </div>
-                    <div>
-                        {{ $this->form->getComponent('filterReason') }}
-                    </div>
-                    <div>
-                        {{ $this->form->getComponent('filterStatus') }}
-                    </div>
-                </div>
-                <div class="flex gap-2">
-                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700">
-                        Aplicar Filtros
-                    </button>
-                </div>
+            <form class="mt-4">
+                {{ $this->form }}
             </form>
         </div>
 
@@ -58,20 +40,6 @@
 
             <!-- Pacientes Nuevos Tab -->
             <div x-show="activeTab === 'nuevos'" class="space-y-4">
-                <!-- Stats Widget -->
-                <div class="rounded-lg bg-white p-6 shadow-sm">
-                    <div class="grid gap-6 md:grid-cols-3">
-                        <div class="space-y-2">
-                            <p class="text-sm font-medium text-gray-600">Pacientes Nuevos</p>
-                            <p class="text-3xl font-bold text-primary-600">{{ $this->getNewPatients()->count() }}</p>
-                            <p class="text-xs text-gray-500">
-                                {{ $filterStartDate ? \Illuminate\Support\Carbon::parse($filterStartDate)->format('d/m/Y') : 'Inicio' }} al 
-                                {{ $filterEndDate ? \Illuminate\Support\Carbon::parse($filterEndDate)->format('d/m/Y') : 'Fin' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Data Table -->
                 <div class="rounded-lg bg-white shadow-sm overflow-x-auto">
                     <table class="w-full text-sm">
@@ -131,23 +99,6 @@
 
             <!-- Retención 30 Días Tab -->
             <div x-show="activeTab === 'retencion'" class="space-y-4">
-                <!-- Stats Widget -->
-                <div class="rounded-lg bg-white p-6 shadow-sm">
-                    @php
-                        $retentionData = $this->getRetention();
-                        $total = $retentionData->count();
-                        $retained = $retentionData->where('retained', true)->count();
-                        $percentage = $total > 0 ? round(($retained / $total) * 100, 2) : 0;
-                    @endphp
-                    <div class="grid gap-6 md:grid-cols-3">
-                        <div class="space-y-2">
-                            <p class="text-sm font-medium text-gray-600">Tasa de Retención</p>
-                            <p class="text-3xl font-bold text-primary-600">{{ $percentage }}%</p>
-                            <p class="text-xs text-gray-500">{{ $retained }} de {{ $total }} pacientes</p>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Data Table -->
                 <div class="rounded-lg bg-white shadow-sm overflow-x-auto">
                     <table class="w-full text-sm">
@@ -201,20 +152,6 @@
 
             <!-- Ausentismo Tab -->
             <div x-show="activeTab === 'ausentismo'" class="space-y-4">
-                <!-- Stats Widget -->
-                <div class="rounded-lg bg-white p-6 shadow-sm">
-                    <div class="grid gap-6 md:grid-cols-3">
-                        <div class="space-y-2">
-                            <p class="text-sm font-medium text-gray-600">Ausencias Totales</p>
-                            <p class="text-3xl font-bold text-yellow-600">{{ $this->getAbsenteeism()->count() }}</p>
-                            <p class="text-xs text-gray-500">
-                                {{ $filterStartDate ? \Illuminate\Support\Carbon::parse($filterStartDate)->format('d/m/Y') : 'Inicio' }} al 
-                                {{ $filterEndDate ? \Illuminate\Support\Carbon::parse($filterEndDate)->format('d/m/Y') : 'Fin' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Data Table -->
                 <div class="rounded-lg bg-white shadow-sm overflow-x-auto">
                     <table class="w-full text-sm">

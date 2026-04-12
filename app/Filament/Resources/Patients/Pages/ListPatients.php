@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\Patients\Pages;
 
 use App\Filament\Resources\Patients\PatientResource;
+use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
-use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
 
 class ListPatients extends ListRecords
 {
@@ -20,6 +20,7 @@ class ListPatients extends ListRecords
                 ->label('Nuevo Paciente')
                 ->icon(LucideIcon::Plus)
                 ->color('success')
+                ->url(PatientResource::getUrl('create')),
         ];
     }
 }

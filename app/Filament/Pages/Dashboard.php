@@ -3,6 +3,10 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\Appointments\AppointmentResource;
+use App\Filament\Widgets\AttendanceChartWidget;
+use App\Filament\Widgets\ReportStatsOverviewWidget;
+use App\Filament\Widgets\StatsOverviewWidget;
+use App\Filament\Widgets\TodayAppointmentsWidget;
 use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
 use Filament\Actions\Action;
 use Filament\Pages\Dashboard as BaseDashboard;
@@ -31,6 +35,16 @@ class Dashboard extends BaseDashboard
                 ->icon(LucideIcon::Calendar)
                 ->color('gray')
                 ->url(AppointmentResource::getUrl('index')), // Te lleva al listado
+        ];
+    }
+
+    public function getWidgets(): array
+    {
+        return [
+            TodayAppointmentsWidget::class,
+            StatsOverviewWidget::class,
+            ReportStatsOverviewWidget::class,
+            AttendanceChartWidget::class,
         ];
     }
 }

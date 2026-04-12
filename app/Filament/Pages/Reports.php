@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Enums\AppointmentStatus;
+use App\Filament\Widgets\ReportStatsOverviewWidget;
 use App\Models\Appointment;
 use App\Services\ReportService;
 use Carbon\Carbon;
@@ -47,6 +48,30 @@ class Reports extends Page implements HasForms
             'filterReason' => $this->filterReason,
             'filterStatus' => $this->filterStatus,
         ]);
+
+        $this->updateReportWidgets();
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            ReportStatsOverviewWidget::class,
+        ];
+    }
+
+    public function updated($name, $value)
+    {
+        $this->updateReportWidgets();
+    }
+
+    public function updateReportWidgets()
+    {
+        $this->dispatch('updateReportWidgets',
+            $this->filterStartDate,
+            $this->filterEndDate,
+            $this->filterReason,
+            $this->filterStatus
+        );
     }
 
     /**

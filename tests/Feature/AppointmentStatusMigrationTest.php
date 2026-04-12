@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Patient;
-use App\Models\Status;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,11 +23,11 @@ class AppointmentStatusMigrationTest extends TestCase
      */
     public function test_migration_converts_status_id_to_status_column(): void
     {
-        // Create test data with the old schema (status_id as FK)
+        // Create test data with the new schema (status as string enum)
         $patient = Patient::factory()->create();
         $user = User::factory()->create();
 
-        // Create an appointment with status_id
+        // Create an appointment with status string
         $appointment = Appointment::create([
             'patient_id' => $patient->id,
             'user_id' => $user->id,
@@ -36,17 +35,22 @@ class AppointmentStatusMigrationTest extends TestCase
             'reason' => 'Test reason',
             'start_date' => now(),
             'end_date' => now()->addHour(),
-            'status_id' => 1, // Assuming status_id=1 is 'Agendado'
+            'status' => AppointmentStatus::AGENDADO->value,
             'cancellation_reason' => null,
         ]);
 
-        // Verify the old schema works before migration
-        $this->assertEquals(1, $appointment->status_id);
+        // Verify the new schema works - status_id should not exist
+        $this->assertDatabaseMissing('appointments', ['status_id' => 1]);
 
-        // After migration:
-        // The status column should be a string, not an ID
-        // This test is written BEFORE the migration is created (RED phase)
-        $this->markTestSkipped('Migration not yet created - this test will verify the migration works');
+        // Verify status column contains the string value
+        $this->assertDatabaseHas('appointments', [
+            'id' => $appointment->id,
+            'status' => AppointmentStatus::AGENDADO->value,
+        ]);
+
+        // Verify the cast works
+        $this->assertInstanceOf(AppointmentStatus::class, $appointment->status);
+        $this->assertEquals(AppointmentStatus::AGENDADO, $appointment->status);
     }
 
     /**
@@ -57,7 +61,7 @@ class AppointmentStatusMigrationTest extends TestCase
         $patient = Patient::factory()->create();
         $user = User::factory()->create();
 
-        // After migration, we should be able to create with enum
+        // Create with enum string value
         $appointment = Appointment::create([
             'patient_id' => $patient->id,
             'user_id' => $user->id,
@@ -71,9 +75,9 @@ class AppointmentStatusMigrationTest extends TestCase
 
         // Verify it was saved correctly
         $this->assertNotNull($appointment->id);
-        $this->assertEquals(AppointmentStatus::AGENDADO->value, $appointment->status);
 
-        // After the model is updated with the cast, it should return an enum
-        $this->markTestSkipped('Model cast not yet updated - test will pass once cast is added');
+        // The status is cast to enum, so compare with enum
+        $this->assertEquals(AppointmentStatus::AGENDADO, $appointment->status);
+        $this->assertEquals('Agendado', $appointment->status->value);
     }
 }

@@ -5,17 +5,26 @@ namespace App\Filament\Resources\Patients;
 use App\Models\Gender;
 use App\Models\Patient;
 use BackedEnum;
+use Carbon\Carbon;
 use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Forms\Components\Placeholder;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
-use Illuminate\Support\HtmlString;
+use Illuminate\Database\Eloquent\Builder;
 
 class PatientResource extends Resource
 {
@@ -34,18 +43,22 @@ class PatientResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->components([
+            ->schema([
                 Section::make('Información Personal')
-                    ->components([
+                    ->schema([
                         Forms\Components\TextInput::make('first_name')
                             ->label('Nombre')
                             ->required()
-                            ->maxLength(100),
+                            ->maxLength(100)
+                            ->columnSpan('full')
+                            ->placeholder('Ingrese el nombre del paciente'),
 
                         Forms\Components\TextInput::make('last_name')
                             ->label('Apellido')
                             ->required()
-                            ->maxLength(100),
+                            ->maxLength(100)
+                            ->columnSpan('full')
+                            ->placeholder('Ingrese el apellido del paciente'),
 
                         Forms\Components\TextInput::make('dni')
                             ->label('DNI')
@@ -53,57 +66,61 @@ class PatientResource extends Resource
                             ->unique(
                                 table: 'personal_data',
                                 column: 'dni',
-                                modifyRuleUsing: function (\Illuminate\Validation\Rules\Unique $rule, $record) {
-                                    // Si hay un registro (estamos editando) y tiene ID de datos personales...
-                                    if ($record && $record->personal_data_id) {
-                                        // ...le decimos a la regla Unique que ignore ESE ID específico
-                                        return $rule->ignore($record->personal_data_id);
-                                    }
-
-                                    return $rule;
-                                }
+                                ignorable: fn (?Patient $record) => $record?->personalData,
+                                ignoreRecord: false
                             )
-                            ->maxLength(20),
+                            ->maxLength(20)
+                            ->placeholder('Ej: 12345678')
+                            ->columnSpan('half'),
 
                         Forms\Components\DatePicker::make('birth_date')
                             ->label('Fecha de Nacimiento')
                             ->native(false)
                             ->displayFormat('d/m/Y')
-                            ->maxDate(now()),
+                            ->maxDate(now())
+                            ->columnSpan('half'),
 
                         Forms\Components\Select::make('gender_id')
                             ->label('Género')
-                            ->options(Gender::pluck('name', 'id'))
+                            ->options(fn () => Gender::query()->orderBy('name')->pluck('name', 'id'))
+                            ->searchable()
                             ->required()
-                            ->preload(),
+                            ->preload()
+                            ->columnSpan('half'),
 
                         Forms\Components\Textarea::make('address')
                             ->label('Dirección')
                             ->maxLength(255)
                             ->rows(2)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->placeholder('Ingrese la dirección completa'),
                     ])
                     ->columns(2),
 
                 Section::make('Información de Contacto')
-                    ->components([
+                    ->schema([
                         Forms\Components\TextInput::make('email')
                             ->label('Email')
                             ->email()
-                            ->maxLength(100),
+                            ->maxLength(100)
+                            ->columnSpan('half')
+                            ->placeholder('ejemplo@correo.com'),
 
                         Forms\Components\TextInput::make('phone')
                             ->label('Teléfono')
                             ->tel()
-                            ->maxLength(20),
+                            ->maxLength(20)
+                            ->columnSpan('half')
+                            ->placeholder('+54 11 XXXX-XXXX'),
                     ])
                     ->columns(2),
 
                 Section::make('Estado')
-                    ->components([
+                    ->schema([
                         Forms\Components\Toggle::make('active')
-                            ->label('Activo')
-                            ->default(true),
+                            ->label('Paciente Activo')
+                            ->default(true)
+                            ->inline(false),
                     ]),
             ]);
     }
@@ -113,7 +130,7 @@ class PatientResource extends Resource
         return $table
             ->modifyQueryUsing(function ($query) {
                 return $query
-                    ->with(['personalData', 'gender'])
+                    ->with(['personalData'])
                     ->addSelect([
                         'last_appointment_date' => \App\Models\Appointment::select('start_date')
                             ->whereColumn('patient_id', 'patients.id')
@@ -124,131 +141,128 @@ class PatientResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Nombre Completo')
-                    ->searchable(['personalData.first_name', 'personalData.last_name'])
+                    ->searchable(['first_name', 'last_name'])
                     ->sortable()
-                    ->weight('medium'),
+                    ->weight(FontWeight::Medium),
 
                 Tables\Columns\TextColumn::make('phone')
                     ->label('Teléfono')
-                    ->default('—'),
+                    ->default('—')
+                    ->copyable()
+                    ->copyableState(fn (string $state): string => $state === '—' ? '' : $state),
 
-                // Fecha de nacimiento (sin default, formateamos manualmente)
                 Tables\Columns\TextColumn::make('personalData.birth_date')
                     ->label('Fecha de Nacimiento')
                     ->sortable()
-                    ->formatStateUsing(function ($state) {
-                        return blank($state)
-                            ? '—'
-                            : ($state instanceof \DateTimeInterface
-                                ? $state->format('d/m/Y')
-                                : \Carbon\Carbon::parse($state)->format('d/m/Y'));
-                    }),
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->format('d/m/Y') : '—'),
 
-                // Último turno (usando subquery para optimizar rendimiento)
                 Tables\Columns\TextColumn::make('last_appointment_date')
                     ->label('Último Turno')
                     ->sortable()
-                    ->formatStateUsing(function ($state) {
-                        return blank($state)
-                            ? '—'
-                            : ($state instanceof \DateTimeInterface
-                                ? $state->format('d/m/Y')
-                                : \Carbon\Carbon::parse($state)->format('d/m/Y'));
-                    }),
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->format('d/m/Y') : '—'),
 
-                Tables\Columns\TextColumn::make('active')
+                Tables\Columns\IconColumn::make('active')
                     ->label('Estado')
-                    ->badge()
-                    ->formatStateUsing(fn (bool $state): string => $state ? 'Activo' : 'Inactivo')
-                    ->color(fn (bool $state): string => $state ? 'success' : 'gray'),
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('active')
+                Tables\Filters\TernaryFilter::make('active')
                     ->label('Estado')
-                    ->options([
-                        '1' => 'Activos',
-                        '0' => 'Inactivos',
-                    ])
-                    ->default('1'),
+                    ->trueLabel('Activos')
+                    ->falseLabel('Inactivos')
+                    ->queries(
+                        true: fn (Builder $query) => $query->where('active', true),
+                        false: fn (Builder $query) => $query->where('active', false),
+                    )
+                    ->default(true),
             ])
-            ->recordActions([
-                \Filament\Actions\ViewAction::make()
-                    ->label('Ver Ficha')
-                    ->icon(LucideIcon::Eye)
-                    ->url(fn (Patient $record): string => PatientResource::getUrl('view', ['record' => $record]))
-                    ->button()
-                    ->color('gray'),
-
-                \Filament\Actions\EditAction::make(),
+            ->actions([
+                ViewAction::make()
+                    ->icon('heroicon-o-eye')
+                    ->url(fn (Patient $record): string => static::getUrl('view', ['record' => $record])),
+                EditAction::make()
+                    ->icon('heroicon-o-pencil')
+                    ->url(fn (Patient $record): string => static::getUrl('edit', ['record' => $record])),
+            ], position: RecordActionsPosition::BeforeColumns)
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
             ])
-            ->groupedBulkActions([
-                \Filament\Actions\DeleteBulkAction::make(),
+            ->emptyStateActions([
+                CreateAction::make()
+                    ->url(fn (): string => static::getUrl('create')),
             ])
-            ->defaultSort('created_at', 'desc')
-            ->searchPlaceholder('Buscar por nombre, apellido, email o Teléfono...')
-            ->emptyStateHeading('No hay pacientes registrados')
-            ->emptyStateDescription('Crea un nuevo paciente para comenzar.')
-            ->emptyStateIcon(LucideIcon::Users);
+            ->striped()
+            ->paginated([10, 25, 50]);
     }
 
     public static function infolist(Schema $schema): Schema
     {
         return $schema
-            ->components([
-                // Usamos una Sección que ocupe TODO el ancho
+            ->schema([
                 Section::make('Ficha del Paciente')
                     ->icon('heroicon-o-identification')
                     ->schema([
-                        // Nivel 1: Encabezado (Foto/Nombre y Estado)
-                        Grid::make(4)->schema([
-                            Group::make([
-                                Placeholder::make('full_name')
-                                    ->hiddenLabel()
-                                    ->content(fn (Patient $record) => new HtmlString(
-                                        "<div class='flex items-center gap-4'>
-                                        <div class='h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-500'>
-                                            ".substr($record->first_name, 0, 1).substr($record->last_name, 0, 1)."
-                                        </div>
-                                        <div>
-                                            <h2 class='text-2xl font-bold'>{$record->full_name}</h2>
-                                            <p class='text-sm text-gray-500'>Paciente registrado hace {$record->created_at->diffForHumans()}</p>
-                                        </div>
-                                    </div>"
-                                    )),
-                            ])->columnSpan(3), // Ocupa 3/4 del ancho
-
-                            Placeholder::make('active')
+                        Grid::make(3)->schema([
+                            // Columna 1: Avatar
+                            ImageEntry::make('avatar')
                                 ->hiddenLabel()
-                                ->content(fn (Patient $record) => new HtmlString(
-                                    $record->active
-                                        ? '<div class="flex justify-end"><span class="px-3 py-1 rounded-full bg-green-50 text-green-700 text-sm font-bold border border-green-200">● Activo</span></div>'
-                                        : '<div class="flex justify-end"><span class="px-3 py-1 rounded-full bg-gray-50 text-gray-600 text-sm font-bold border border-gray-200">○ Inactivo</span></div>'
-                                ))->columnSpan(1), // Ocupa 1/4 (a la derecha)
-                        ]),
+                                ->defaultImageUrl(fn (Patient $record): string => 'https://ui-avatars.com/api/?name='.urlencode($record->full_name).'&background=random')
+                                ->circular()
+                                ->height(80)
+                                ->width(80),
+
+                            // Columna 2: Nombre y fecha de registro
+                            Group::make([
+                                TextEntry::make('full_name')
+                                    ->hiddenLabel()
+                                    ->weight(FontWeight::Bold)
+                                    ->size('lg'),
+                                TextEntry::make('created_at')
+                                    ->hiddenLabel()
+                                    ->color('gray')
+                                    ->formatStateUsing(fn ($state) => 'Paciente desde '.$state->diffForHumans()),
+                            ]),
+
+                            // Columna 3: Badge de Estado (alineado a la derecha)
+                            TextEntry::make('active')
+                                ->hiddenLabel()
+                                ->badge()
+                                ->formatStateUsing(fn (bool $state): string => $state ? 'Activo' : 'Inactivo')
+                                ->color(fn (bool $state): string => $state ? 'success' : 'gray')
+                                ->alignEnd(),
+                        ])->columns(3),
 
                         // Separador visual
-                        Group::make()->schema([])->extraAttributes(['class' => 'border-t border-gray-100 my-4']),
+                        Group::make()
+                            ->schema([])
+                            ->extraAttributes(['class' => 'border-t border-gray-200 dark:border-gray-700 my-4']),
 
-                        // Nivel 2: Datos en 3 columnas (aprovechando el ancho)
+                        // Datos de contacto
                         Grid::make(3)->schema([
-                            Placeholder::make('phone')
+                            TextEntry::make('phone')
                                 ->label('Teléfono')
                                 ->icon('heroicon-m-phone')
-                                ->content(fn ($record) => $record->phone ?? '-'),
+                                ->default('—')
+                                ->copyable(),
 
-                            Placeholder::make('email')
+                            TextEntry::make('email')
                                 ->label('Email')
                                 ->icon('heroicon-m-envelope')
-                                ->content(fn ($record) => $record->email ?? '-'),
+                                ->default('—')
+                                ->url(fn (?string $state): ?string => $state ? "mailto:{$state}" : null)
+                                ->openUrlInNewTab(),
 
-                            Placeholder::make('personalData.birth_date')
+                            TextEntry::make('personalData.birth_date')
                                 ->label('Fecha de Nacimiento')
                                 ->icon('heroicon-m-calendar')
-                                ->content(fn ($record) => $record->personalData?->birth_date
-                                    ? $record->personalData->birth_date->format('d/m/Y').' ('.$record->personalData->birth_date->age.' años)'
-                                    : '-'),
+                                ->formatStateUsing(fn ($state) => $state ? $state->format('d/m/Y').' ('.$state->age.' años)' : '—'),
                         ]),
-
                     ])
                     ->columnSpanFull(),
             ]);

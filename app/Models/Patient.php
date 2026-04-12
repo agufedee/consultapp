@@ -53,6 +53,13 @@ class Patient extends Model
 
     // ==================== ACCESSORS ====================
 
+    public function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->fullName,
+        );
+    }
+
     public function fullName(): Attribute
     {
         return Attribute::make(
