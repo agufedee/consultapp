@@ -19,7 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class AppointmentResource extends Resource
 {
@@ -32,6 +32,31 @@ class AppointmentResource extends Resource
     protected static ?string $modelLabel = 'Turno';
 
     protected static ?string $pluralModelLabel = 'Turnos';
+
+    public static function canViewAny(): bool
+    {
+        return Gate::allows('viewAny', Appointment::class);
+    }
+
+    public static function canCreate(): bool
+    {
+        return Gate::allows('create', Appointment::class);
+    }
+
+    public static function canEdit(mixed $record): bool
+    {
+        return Gate::allows('update', $record);
+    }
+
+    public static function canDelete(mixed $record): bool
+    {
+        return Gate::allows('delete', $record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Gate::allows('delete', Appointment::class);
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -109,7 +134,7 @@ class AppointmentResource extends Resource
                         Select::make('user_id')
                             ->label('Nutricionista')
                             ->relationship('user', 'name')
-                            ->default(fn () => Auth::id())
+                            ->default(fn () => \Illuminate\Support\Facades\Auth::id())
                             ->required(),
 
                         Textarea::make('cancellation_reason')

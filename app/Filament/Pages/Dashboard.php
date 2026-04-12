@@ -43,7 +43,6 @@ class Dashboard extends BaseDashboard
         return [
             TodayAppointmentsWidget::class,
             StatsOverviewWidget::class,
-            ReportStatsOverviewWidget::class,
             AttendanceChartWidget::class,
         ];
     }

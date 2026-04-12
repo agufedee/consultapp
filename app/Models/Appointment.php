@@ -32,6 +32,29 @@ class Appointment extends Model
         'status' => AppointmentStatus::class,
     ];
 
+    // Business Rules validations
+    protected static function booted(): void
+    {
+        static::creating(function (Appointment $appointment) {
+            // BR-001: Cannot be in the past
+            if ($appointment->start_date->isPast()) {
+                throw new \InvalidArgumentException('No se pueden agendar turnos en el pasado.');
+            }
+
+            // BR-003: Must be within business hours (7:00 - 21:00)
+            $hour = $appointment->start_date->hour;
+            if ($hour < 7 || $hour >= 21) {
+                throw new \InvalidArgumentException('Los turnos deben agendarse entre las 07:00 y las 21:00.');
+            }
+
+            // BR-004: Cannot create appointment for inactive patient
+            $appointment->loadMissing('patient');
+            if ($appointment->patient && ! $appointment->patient->active) {
+                throw new \InvalidArgumentException('No se pueden agendar turnos para pacientes inactivos.');
+            }
+        });
+    }
+
     // Relaciones
     public function patient(): BelongsTo
     {
@@ -68,5 +91,29 @@ class Appointment extends Model
     public function scopeByStatus($query, $statusId)
     {
         return $query->where('status', $statusId);
+    }
+
+    /**
+     * Check if this appointment overlaps with another for the same user.
+     */
+    public function overlapsWithUser(int $userId, ?int $excludeId = null): bool
+    {
+        return static::where('user_id', $userId)
+            ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->where('start_date', '<=', $this->start_date)
+                        ->where('end_date', '>', $this->start_date);
+                })
+                    ->orWhere(function ($q) {
+                        $q->where('start_date', '<', $this->end_date)
+                            ->where('end_date', '>=', $this->end_date);
+                    })
+                    ->orWhere(function ($q) {
+                        $q->where('start_date', '>=', $this->start_date)
+                            ->where('end_date', '<=', $this->end_date);
+                    });
+            })
+            ->exists();
     }
 }

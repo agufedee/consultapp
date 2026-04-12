@@ -10,6 +10,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 class RoleResource extends Resource
 {
@@ -24,6 +25,31 @@ class RoleResource extends Resource
     protected static ?string $pluralModelLabel = 'Roles';
 
     protected static ?int $navigationSort = 11;
+
+    public static function canViewAny(): bool
+    {
+        return Gate::allows('viewAny', Role::class);
+    }
+
+    public static function canCreate(): bool
+    {
+        return Gate::allows('create', Role::class);
+    }
+
+    public static function canEdit(mixed $record): bool
+    {
+        return Gate::allows('update', $record);
+    }
+
+    public static function canDelete(mixed $record): bool
+    {
+        return Gate::allows('delete', $record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Gate::allows('delete', Role::class);
+    }
 
     public static function form(Schema $schema): Schema
     {

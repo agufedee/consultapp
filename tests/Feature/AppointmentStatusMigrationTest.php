@@ -27,16 +27,12 @@ class AppointmentStatusMigrationTest extends TestCase
         $patient = Patient::factory()->create();
         $user = User::factory()->create();
 
-        // Create an appointment with status string
-        $appointment = Appointment::create([
+        // Create an appointment using factory (respects business rules)
+        $appointment = Appointment::factory()->create([
             'patient_id' => $patient->id,
             'user_id' => $user->id,
-            'send_reminder' => false,
             'reason' => 'Test reason',
-            'start_date' => now(),
-            'end_date' => now()->addHour(),
             'status' => AppointmentStatus::AGENDADO->value,
-            'cancellation_reason' => null,
         ]);
 
         // Verify the new schema works - status_id should not exist
@@ -61,16 +57,12 @@ class AppointmentStatusMigrationTest extends TestCase
         $patient = Patient::factory()->create();
         $user = User::factory()->create();
 
-        // Create with enum string value
-        $appointment = Appointment::create([
+        // Create with factory (respects business rules)
+        $appointment = Appointment::factory()->create([
             'patient_id' => $patient->id,
             'user_id' => $user->id,
-            'send_reminder' => false,
             'reason' => 'Test reason',
-            'start_date' => now(),
-            'end_date' => now()->addHour(),
             'status' => AppointmentStatus::AGENDADO->value,
-            'cancellation_reason' => null,
         ]);
 
         // Verify it was saved correctly

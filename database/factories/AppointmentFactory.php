@@ -22,8 +22,15 @@ class AppointmentFactory extends Factory
      */
     public function definition(): array
     {
-        $startDate = fake()->dateTimeBetween('-1 month', '+1 month');
-        $endDate = (clone $startDate)->modify('+1 hour');
+        // Business hours: 8am to 6pm, future dates only
+        $hour = fake()->numberBetween(8, 17);
+        $minute = fake()->randomElement([0, 15, 30, 45]);
+        $daysAhead = fake()->numberBetween(1, 30);
+
+        $startDate = now()
+            ->addDays($daysAhead)
+            ->setTime($hour, $minute);
+        $endDate = (clone $startDate)->addHour();
 
         return [
             'patient_id' => Patient::factory(),
@@ -37,13 +44,15 @@ class AppointmentFactory extends Factory
     }
 
     /**
-     * Appointment for today.
+     * Appointment for today during business hours.
      */
     public function today(): static
     {
         return $this->state(function (array $attributes) {
-            $startDate = fake()->dateTimeBetween('today 08:00', 'today 18:00');
-            $endDate = (clone $startDate)->modify('+1 hour');
+            $hour = fake()->numberBetween(8, 17);
+            $minute = fake()->numberElement([0, 15, 30, 45]);
+            $startDate = today()->setTime($hour, $minute);
+            $endDate = (clone $startDate)->addHour();
 
             return [
                 'start_date' => $startDate,

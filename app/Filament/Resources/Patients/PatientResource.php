@@ -25,6 +25,7 @@ use Filament\Tables;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 class PatientResource extends Resource
 {
@@ -39,6 +40,31 @@ class PatientResource extends Resource
     protected static ?string $pluralModelLabel = 'Pacientes';
 
     protected static ?int $navigationSort = 2;
+
+    public static function canViewAny(): bool
+    {
+        return Gate::allows('viewAny', Patient::class);
+    }
+
+    public static function canCreate(): bool
+    {
+        return Gate::allows('create', Patient::class);
+    }
+
+    public static function canEdit(mixed $record): bool
+    {
+        return Gate::allows('update', $record);
+    }
+
+    public static function canDelete(mixed $record): bool
+    {
+        return Gate::allows('delete', $record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Gate::allows('delete', Patient::class);
+    }
 
     public static function form(Schema $schema): Schema
     {

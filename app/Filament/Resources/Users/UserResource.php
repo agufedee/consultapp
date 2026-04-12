@@ -11,6 +11,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
@@ -27,6 +28,30 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
+    public static function canViewAny(): bool
+    {
+        return Gate::allows('viewAny', User::class);
+    }
+
+    public static function canCreate(): bool
+    {
+        return Gate::allows('create', User::class);
+    }
+
+    public static function canEdit(mixed $record): bool
+    {
+        return Gate::allows('update', $record);
+    }
+
+    public static function canDelete(mixed $record): bool
+    {
+        return Gate::allows('delete', $record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Gate::allows('delete', User::class);
+    }
 
     public static function form(Schema $schema): Schema
     {

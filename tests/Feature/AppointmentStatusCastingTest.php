@@ -4,8 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
-use App\Models\Patient;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -17,16 +15,7 @@ class AppointmentStatusCastingTest extends TestCase
     #[Test]
     public function appointment_can_be_created_with_enum_status(): void
     {
-        $patient = Patient::factory()->create();
-        $user = User::factory()->create();
-
-        $appointment = Appointment::create([
-            'patient_id' => $patient->id,
-            'user_id' => $user->id,
-            'send_reminder' => false,
-            'reason' => 'Test reason',
-            'start_date' => now(),
-            'end_date' => now()->addHour(),
+        $appointment = Appointment::factory()->create([
             'status' => AppointmentStatus::AGENDADO->value,
         ]);
 
@@ -38,16 +27,7 @@ class AppointmentStatusCastingTest extends TestCase
     #[Test]
     public function appointment_status_persists_and_casts_on_retrieval(): void
     {
-        $patient = Patient::factory()->create();
-        $user = User::factory()->create();
-
-        $appointment = Appointment::create([
-            'patient_id' => $patient->id,
-            'user_id' => $user->id,
-            'send_reminder' => false,
-            'reason' => 'Test reason',
-            'start_date' => now(),
-            'end_date' => now()->addHour(),
+        $appointment = Appointment::factory()->create([
             'status' => AppointmentStatus::ATENDIDO->value,
         ]);
 
@@ -61,16 +41,7 @@ class AppointmentStatusCastingTest extends TestCase
     #[Test]
     public function appointment_can_be_updated_with_new_status(): void
     {
-        $patient = Patient::factory()->create();
-        $user = User::factory()->create();
-
-        $appointment = Appointment::create([
-            'patient_id' => $patient->id,
-            'user_id' => $user->id,
-            'send_reminder' => false,
-            'reason' => 'Test reason',
-            'start_date' => now(),
-            'end_date' => now()->addHour(),
+        $appointment = Appointment::factory()->create([
             'status' => AppointmentStatus::AGENDADO->value,
         ]);
 
