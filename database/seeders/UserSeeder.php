@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => env('SEED_ADMIN_NAME', 'Maria Fernanda Trinidad'),
             'email' => env('SEED_ADMIN_EMAIL', 'nutricionista@consultapp.com'),
-            'password' => env('SEED_ADMIN_PASSWORD', 'password'),
+            'password' => env('SEED_ADMIN_PASSWORD', 'changeme'),
             'role_id' => $nutritionistRole?->id ?? 1,
             'active' => true,
         ]);
@@ -34,7 +34,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => env('SEED_SECRETARY_NAME', 'Ana Perez'),
             'email' => env('SEED_SECRETARY_EMAIL', 'secretaria@consultapp.com'),
-            'password' => env('SEED_SECRETARY_PASSWORD', 'password'),
+            'password' => env('SEED_SECRETARY_PASSWORD', 'changeme'),
             'role_id' => $secretaryRole?->id ?? 2,
             'active' => true,
         ]);
