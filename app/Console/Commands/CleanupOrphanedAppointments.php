@@ -28,24 +28,29 @@ class CleanupOrphanedAppointments extends Command
     public function handle()
     {
         $dryRun = $this->option('dry-run');
-        $this->info($dryRun ? '[1;33mMODO SIMULACIÓN (DRY-RUN)[0m' : '[1;32mMODO EJECUCIÓN[0m');
+        $this->info($dryRun ? 'MODO SIMULACIÓN (DRY-RUN)' : 'MODO EJECUCIÓN');
 
         $this->line('');
         $this->info('Buscando turnos con pacientes inválidos...');
 
         // Turnos donde patient_id es NULL
-        $orphanedByNullPatient = Appointment::whereNull('patient_id');
+        $orphanedByNullPatientQuery = Appointment::whereNull('patient_id');
 
         // Turnos donde patient_id no corresponde a ningún paciente en la tabla `patients`
-        $orphanedByInvalidPatient = Appointment::whereNotNull('patient_id')
-            ->whereNotIn('patient_id', DB::table('patients')->pluck('id'));
+        // Usamos whereNotExists en lugar de whereNotIn+pluck para evitar cargar todos los IDs en memoria
+        $orphanedByInvalidPatientQuery = Appointment::whereNotNull('patient_id')
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('patients')
+                    ->whereColumn('patients.id', 'appointments.patient_id');
+            });
 
-        $totalPatientOrphans = $orphanedByNullPatient->count() + $orphanedByInvalidPatient->count();
+        $totalPatientOrphans = $orphanedByNullPatientQuery->count() + $orphanedByInvalidPatientQuery->count();
 
         if ($totalPatientOrphans > 0) {
             $this->warn("Se encontraron {$totalPatientOrphans} turnos huérfanos por paciente.");
-            $orphanedByNullPatient->get()->each(fn ($a) => $this->line("  - Turno ID: {$a->id} (patient_id es NULL)"));
-            $orphanedByInvalidPatient->get()->each(fn ($a) => $this->line("  - Turno ID: {$a->id} (patient_id {$a->patient_id} no existe)"));
+            $orphanedByNullPatientQuery->get()->each(fn ($a) => $this->line("  - Turno ID: {$a->id} (patient_id es NULL)"));
+            $orphanedByInvalidPatientQuery->get()->each(fn ($a) => $this->line("  - Turno ID: {$a->id} (patient_id {$a->patient_id} no existe)"));
         } else {
             $this->info('✅ No se encontraron turnos huérfanos por paciente.');
         }
@@ -54,18 +59,22 @@ class CleanupOrphanedAppointments extends Command
         $this->info('Buscando turnos con usuarios inválidos...');
 
         // Turnos donde user_id es NULL
-        $orphanedByNullUser = Appointment::whereNull('user_id');
+        $orphanedByNullUserQuery = Appointment::whereNull('user_id');
 
         // Turnos donde user_id no corresponde a ningún usuario en la tabla `users`
-        $orphanedByInvalidUser = Appointment::whereNotNull('user_id')
-            ->whereNotIn('user_id', DB::table('users')->pluck('id'));
+        $orphanedByInvalidUserQuery = Appointment::whereNotNull('user_id')
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('users')
+                    ->whereColumn('users.id', 'appointments.user_id');
+            });
 
-        $totalUserOrphans = $orphanedByNullUser->count() + $orphanedByInvalidUser->count();
+        $totalUserOrphans = $orphanedByNullUserQuery->count() + $orphanedByInvalidUserQuery->count();
 
         if ($totalUserOrphans > 0) {
             $this->warn("Se encontraron {$totalUserOrphans} turnos huérfanos por usuario.");
-            $orphanedByNullUser->get()->each(fn ($a) => $this->line("  - Turno ID: {$a->id} (user_id es NULL)"));
-            $orphanedByInvalidUser->get()->each(fn ($a) => $this->line("  - Turno ID: {$a->id} (user_id {$a->user_id} no existe)"));
+            $orphanedByNullUserQuery->get()->each(fn ($a) => $this->line("  - Turno ID: {$a->id} (user_id es NULL)"));
+            $orphanedByInvalidUserQuery->get()->each(fn ($a) => $this->line("  - Turno ID: {$a->id} (user_id {$a->user_id} no existe)"));
         } else {
             $this->info('✅ No se encontraron turnos huérfanos por usuario.');
         }
@@ -80,8 +89,8 @@ class CleanupOrphanedAppointments extends Command
 
         if (! $dryRun) {
             if ($this->confirm('¿Desea eliminar permanentemente estos registros?', false)) {
-                $deletedPatientCount = $orphanedByNullPatient->delete() + $orphanedByInvalidPatient->delete();
-                $deletedUserCount = $orphanedByNullUser->delete() + $orphanedByInvalidUser->delete();
+                $deletedPatientCount = $orphanedByNullPatientQuery->delete() + $orphanedByInvalidPatientQuery->delete();
+                $deletedUserCount = $orphanedByNullUserQuery->delete() + $orphanedByInvalidUserQuery->delete();
                 $this->info("Se eliminaron {$deletedPatientCount} turnos por paciente.");
                 $this->info("Se eliminaron {$deletedUserCount} turnos por usuario.");
                 $this->info('Limpieza completada.');

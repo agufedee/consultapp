@@ -40,7 +40,7 @@ class Measurement extends Model
     }
 
     // Calcular BMI automáticamente
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
@@ -53,12 +53,12 @@ class Measurement extends Model
     }
 
     // Scopes
-    public function scopeLatestMeasurement($query)
+    public function scopeLatestMeasurement(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->orderBy('measurement_date', 'desc');
     }
 
-    public function scopeForPatient($query, $patientId)
+    public function scopeForPatient(\Illuminate\Database\Eloquent\Builder $query, int $patientId): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('patient_id', $patientId);
     }

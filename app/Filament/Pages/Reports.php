@@ -204,38 +204,25 @@ class Reports extends Page implements HasForms
     {
         $data = $this->getNewPatients();
 
-        $filename = 'pacientes-nuevos-'.now()->format('Y-m-d').'.csv';
-        $csv = fopen('php://temp', 'r+');
-
-        // Headers
-        fputcsv($csv, ['ID Paciente', 'Nombre Paciente', 'Profesional', 'Motivo', 'Fecha Turno', 'Estado']);
-
-        // Data
+        $rows = [];
         foreach ($data as $appointment) {
-            // Defensive check for patient and user relationships
             if (! $appointment->patient || ! $appointment->user) {
                 continue;
             }
-            fputcsv($csv, [
+            $rows[] = [
                 $appointment->patient_id,
-                $appointment->patient->name,
+                $appointment->patient->full_name,
                 $appointment->user->name,
                 $appointment->reason,
                 $appointment->start_date->format('Y-m-d H:i'),
                 $appointment->status->value,
-            ]);
+            ];
         }
 
-        rewind($csv);
-        $contents = stream_get_contents($csv);
-        fclose($csv);
-
-        return response()->streamDownload(
-            function () use ($contents) {
-                echo $contents;
-            },
-            $filename,
-            ['Content-Type' => 'text/csv']
+        return $this->downloadCsv(
+            'pacientes-nuevos-'.now()->format('Y-m-d').'.csv',
+            ['ID Paciente', 'Nombre Paciente', 'Profesional', 'Motivo', 'Fecha Turno', 'Estado'],
+            $rows
         );
     }
 
@@ -246,34 +233,22 @@ class Reports extends Page implements HasForms
     {
         $data = $this->getRetention();
 
-        $filename = 'retension-'.now()->format('Y-m-d').'.csv';
-        $csv = fopen('php://temp', 'r+');
-
-        // Headers
-        fputcsv($csv, ['ID Paciente', 'Nombre Paciente', 'Primer Turno', 'Retenido', 'Segundo Turno', 'Días hasta Retención']);
-
-        // Data
+        $rows = [];
         foreach ($data as $record) {
-            fputcsv($csv, [
+            $rows[] = [
                 $record->patient_id,
                 $record->patient_name,
                 $record->first_appointment_date->format('Y-m-d'),
                 $record->retained ? 'Sí' : 'No',
                 $record->second_appointment_date?->format('Y-m-d') ?? 'N/A',
                 $record->days_to_retention ?? 'N/A',
-            ]);
+            ];
         }
 
-        rewind($csv);
-        $contents = stream_get_contents($csv);
-        fclose($csv);
-
-        return response()->streamDownload(
-            function () use ($contents) {
-                echo $contents;
-            },
-            $filename,
-            ['Content-Type' => 'text/csv']
+        return $this->downloadCsv(
+            'retension-'.now()->format('Y-m-d').'.csv',
+            ['ID Paciente', 'Nombre Paciente', 'Primer Turno', 'Retenido', 'Segundo Turno', 'Días hasta Retención'],
+            $rows
         );
     }
 
@@ -284,23 +259,43 @@ class Reports extends Page implements HasForms
     {
         $data = $this->getAbsenteeism();
 
-        $filename = 'ausentismo-'.now()->format('Y-m-d').'.csv';
-        $csv = fopen('php://temp', 'r+');
-
-        // Headers
-        fputcsv($csv, ['ID Paciente', 'Nombre Paciente', 'Fecha', 'Hora', 'Día de Semana', 'Franja Horaria', 'Motivo']);
-
-        // Data
+        $rows = [];
         foreach ($data as $record) {
-            fputcsv($csv, [
+            $rows[] = [
                 $record->patient_id,
                 $record->patient_name,
                 $record->date,
                 $record->time,
                 $record->day_of_week,
                 $record->time_slot,
-                $record->reason,
-            ]);
+                $record->reason ?? 'N/A',
+            ];
+        }
+
+        return $this->downloadCsv(
+            'ausentismo-'.now()->format('Y-m-d').'.csv',
+            ['ID Paciente', 'Nombre Paciente', 'Fecha', 'Hora', 'Día de Semana', 'Franja Horaria', 'Motivo'],
+            $rows
+        );
+    }
+
+    /**
+     * Generate and return a CSV download response.
+     *
+     * @param  string  $filename  Desired filename (should end with .csv)
+     * @param  array  $headers  Column headers
+     * @param  array  $rows  Data rows (each row is an array of values)
+     */
+    protected function downloadCsv(string $filename, array $headers, array $rows): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $csv = fopen('php://temp', 'r+');
+
+        // Write headers
+        fputcsv($csv, $headers);
+
+        // Write data rows
+        foreach ($rows as $row) {
+            fputcsv($csv, $row);
         }
 
         rewind($csv);

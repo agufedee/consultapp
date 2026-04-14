@@ -123,4 +123,22 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Seeder Credentials
+    |--------------------------------------------------------------------------
+    |
+    | Default credentials for database seeders. Using config() instead of env()
+    | ensures these work correctly when config is cached.
+    |
+    */
+
+    'seed_admin_name' => env('SEED_ADMIN_NAME', 'Maria Fernanda Trinidad'),
+    'seed_admin_email' => env('SEED_ADMIN_EMAIL', 'nutricionista@consultapp.com'),
+    'seed_admin_password' => env('SEED_ADMIN_PASSWORD', 'Nutricionista2024!'),
+
+    'seed_secretary_name' => env('SEED_SECRETARY_NAME', 'Ana Perez'),
+    'seed_secretary_email' => env('SEED_SECRETARY_EMAIL', 'secretaria@consultapp.com'),
+    'seed_secretary_password' => env('SEED_SECRETARY_PASSWORD', 'Secretaria2024!'),
+
 ];

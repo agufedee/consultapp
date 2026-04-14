@@ -4,13 +4,16 @@ namespace App\Filament\Resources\Appointments;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Rules\NoOverlappingAppointments;
 use CodeWithDennis\FilamentLucideIcons\Enums\LucideIcon;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -112,10 +115,64 @@ class AppointmentResource extends Resource
                                 ->minutesStep(15)
                                 ->default(now()->addHour()->startOfHour())
                                 ->required()
-                                ->reactive()
-                                ->afterStateUpdated(function ($set, $state) {
+                                ->live()
+                                ->afterStateUpdated(function ($state, $set, $get) {
                                     if ($state) {
                                         $set('end_date', Carbon::parse($state)->addHour());
+
+                                        $start = Carbon::parse($state);
+                                        $hour = $start->hour;
+
+                                        // Validar franja horaria (07:00 - 21:00)
+                                        if ($hour < 7 || $hour >= 21) {
+                                            $set('start_date', null);
+                                            $set('end_date', null);
+
+                                            Notification::make()
+                                                ->title('Horario fuera de rango')
+                                                ->body('Los turnos deben agendarse entre las 07:00 y las 21:00.')
+                                                ->danger()
+                                                ->send();
+
+                                            return;
+                                        }
+                                    }
+
+                                    // Validar superposición en tiempo real
+                                    $userId = $get('user_id');
+                                    $endDate = $get('end_date');
+                                    if ($userId && $state && $endDate) {
+                                        $start = Carbon::parse($state);
+                                        $end = Carbon::parse($endDate);
+
+                                        $overlapping = Appointment::query()
+                                            ->where('user_id', $userId)
+                                            ->where(function ($query) use ($start, $end) {
+                                                $query->where(function ($q) use ($start) {
+                                                    $q->where('start_date', '<=', $start)
+                                                        ->where('end_date', '>', $start);
+                                                })
+                                                    ->orWhere(function ($q) use ($end) {
+                                                        $q->where('start_date', '<', $end)
+                                                            ->where('end_date', '>=', $end);
+                                                    })
+                                                    ->orWhere(function ($q) use ($start, $end) {
+                                                        $q->where('start_date', '>=', $start)
+                                                            ->where('end_date', '<=', $end);
+                                                    });
+                                            })
+                                            ->exists();
+
+                                        if ($overlapping) {
+                                            $set('start_date', null);
+                                            $set('end_date', null);
+
+                                            Notification::make()
+                                                ->title('Turno Superpuesto')
+                                                ->body('El profesional ya tiene un turno en ese horario. Por favor seleccioná otro horario.')
+                                                ->danger()
+                                                ->send();
+                                        }
                                     }
                                 }),
 
@@ -141,6 +198,10 @@ class AppointmentResource extends Resource
                             ->label('Motivo Cancelación')
                             ->placeholder('Solo si se cancela...')
                             ->rows(3),
+
+                        // Campo oculto para pasar el ID del registro actual (para edición)
+                        \Filament\Forms\Components\Hidden::make('exclude_appointment_id')
+                            ->default(fn (?Appointment $record) => $record?->id),
 
                         TextInput::make('created_at')
                             ->label('Creado')
@@ -186,6 +247,7 @@ class AppointmentResource extends Resource
             ->filters([])
             ->actions([
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
                 DeleteBulkAction::make(),

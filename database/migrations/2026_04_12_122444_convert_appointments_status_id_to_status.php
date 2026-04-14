@@ -66,25 +66,23 @@ return new class extends Migration
             $table->foreignId('status_id')->nullable()->after('end_date');
         });
 
-        // Copy data back from status to status_id (reverse mapping)
-        DB::statement("
-            UPDATE appointments 
-            SET status_id = (
-                SELECT statuses.id 
-                FROM statuses 
-                WHERE 
-                    CASE appointments.status
-                        WHEN 'Agendado' THEN statuses.status_name = 'scheduled'
-                        WHEN 'Confirmado' THEN statuses.status_name = 'confirmed'
-                        WHEN 'Atendido' THEN statuses.status_name = 'attended'
-                        WHEN 'Cancelado' THEN statuses.status_name = 'cancelled'
-                        WHEN 'Ausente' THEN statuses.status_name = 'absent'
-                        ELSE FALSE
-                    END
-                LIMIT 1
-            )
-            WHERE status IS NOT NULL
-        ");
+        // Copy data back from status to status_id using multiple UPDATE statements
+        // (CASE in WHERE clause is not valid MySQL syntax)
+        $statusMappings = [
+            'Agendado' => 'scheduled',
+            'Confirmado' => 'confirmed',
+            'Atendido' => 'attended',
+            'Cancelado' => 'cancelled',
+            'Ausente' => 'absent',
+        ];
+
+        foreach ($statusMappings as $spanishStatus => $englishStatus) {
+            DB::statement("
+                UPDATE appointments
+                SET status_id = (SELECT id FROM statuses WHERE status_name = ? LIMIT 1)
+                WHERE status = ?
+            ", [$englishStatus, $spanishStatus]);
+        }
 
         // Drop the status column
         Schema::table('appointments', function (Blueprint $table) {

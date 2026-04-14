@@ -3,34 +3,34 @@
         <!-- Filters Section -->
         <div class="rounded-lg bg-white p-6 shadow-sm">
             <h3 class="text-lg font-semibold">Filtros</h3>
-            
+
             <form class="mt-4">
                 {{ $this->form }}
             </form>
         </div>
 
         <!-- Tabs for Different Reports -->
-        <div x-data="{ activeTab: 'nuevos' }" class="space-y-6">
+        <div x-data="reportTabs()" class="space-y-6">
             <!-- Tab Navigation -->
             <div class="border-b border-gray-200">
                 <div class="flex gap-4">
                     <button
                         @click="activeTab = 'nuevos'"
-                        :class="activeTab === 'nuevos' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-600 hover:text-gray-900'"
+                        :class="tabClass('nuevos')"
                         class="px-4 py-3 text-sm font-semibold transition"
                     >
                         Pacientes Nuevos
                     </button>
                     <button
                         @click="activeTab = 'retencion'"
-                        :class="activeTab === 'retencion' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-600 hover:text-gray-900'"
+                        :class="tabClass('retencion')"
                         class="px-4 py-3 text-sm font-semibold transition"
                     >
                         Retención 30 Días
                     </button>
                     <button
                         @click="activeTab = 'ausentismo'"
-                        :class="activeTab === 'ausentismo' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-600 hover:text-gray-900'"
+                        :class="tabClass('ausentismo')"
                         class="px-4 py-3 text-sm font-semibold transition"
                     >
                         Ausentismo
@@ -55,24 +55,21 @@
                         </thead>
                         <tbody class="divide-y">
                             @forelse($this->getNewPatients() as $appointment)
+                                @php
+                                    $statusValue = $appointment->status?->value ?? $appointment->status ?? 'N/A';
+                                @endphp
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4">{{ $appointment->patient_id }}</td>
-                                    <td class="px-6 py-4">{{ $appointment->patient?->name ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4">{{ $appointment->patient?->full_name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4">{{ $appointment->user?->name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4">{{ $appointment->reason ?? 'N/A' }}</td>
                                     <td class="px-6 py-4">{{ $appointment->start_date->format('d/m/Y H:i') }}</td>
                                     <td class="px-6 py-4">
-                                        <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
-                                            :class="{
-                                                'bg-green-100 text-green-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Atendido',
-                                                'bg-blue-100 text-blue-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Confirmado',
-                                                'bg-gray-100 text-gray-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Agendado',
-                                                'bg-red-100 text-red-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Cancelado',
-                                                'bg-yellow-100 text-yellow-800': '{{ $appointment->status?->value ?? $appointment->status ?? "" }}' === 'Ausente',
-                                            }"
-                                        >
-                                            {{ $appointment->status?->value ?? $appointment->status ?? 'N/A' }}
-                                        </span>
+                                        <span
+                                            class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+                                            x-bind:class="statusBadgeClass('{{ $statusValue }}')"
+                                            x-text="'{{ $statusValue }}'"
+                                        ></span>
                                     </td>
                                 </tr>
                             @empty
@@ -119,11 +116,11 @@
                                     <td class="px-6 py-4">{{ $record->patient_name }}</td>
                                     <td class="px-6 py-4">{{ $record->first_appointment_date->format('d/m/Y') }}</td>
                                     <td class="px-6 py-4">
-                                        <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
-                                            :class="{ 'bg-green-100 text-green-800': {{ $record->retained ? 'true' : 'false' }}, 'bg-red-100 text-red-800': {{ !$record->retained ? 'true' : 'false' }} }"
-                                        >
-                                            {{ $record->retained ? 'Sí' : 'No' }}
-                                        </span>
+                                        <span
+                                            class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+                                            :class="retentionBadgeClass({{ $record->retained ? 'true' : 'false' }})"
+                                            x-text="{{ $record->retained ? 'Sí' : 'No' }}"
+                                        ></span>
                                     </td>
                                     <td class="px-6 py-4">{{ $record->second_appointment_date?->format('d/m/Y') ?? 'N/A' }}</td>
                                     <td class="px-6 py-4">{{ $record->days_to_retention ?? 'N/A' }}</td>

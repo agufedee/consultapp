@@ -53,6 +53,21 @@ class Appointment extends Model
                 throw new \InvalidArgumentException('No se pueden agendar turnos para pacientes inactivos.');
             }
         });
+
+        static::updating(function (Appointment $appointment) {
+            // BR-001: Cannot be in the past
+            if ($appointment->isDirty('start_date') && $appointment->start_date->isPast()) {
+                throw new \InvalidArgumentException('No se pueden agendar turnos en el pasado.');
+            }
+
+            // BR-003: Must be within business hours (7:00 - 21:00)
+            if ($appointment->isDirty('start_date')) {
+                $hour = $appointment->start_date->hour;
+                if ($hour < 7 || $hour >= 21) {
+                    throw new \InvalidArgumentException('Los turnos deben agendarse entre las 07:00 y las 21:00.');
+                }
+            }
+        });
     }
 
     // Relaciones
@@ -77,18 +92,18 @@ class Appointment extends Model
     }
 
     // Scopes
-    public function scopeUpcoming($query)
+    public function scopeUpcoming(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('start_date', '>=', now())
             ->orderBy('start_date');
     }
 
-    public function scopeToday($query)
+    public function scopeToday(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereDate('start_date', today());
     }
 
-    public function scopeByStatus($query, $statusId)
+    public function scopeByStatus(\Illuminate\Database\Eloquent\Builder $query, string $statusId): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('status', $statusId);
     }

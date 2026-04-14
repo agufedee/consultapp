@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
@@ -23,18 +24,18 @@ class UserSeeder extends Seeder
 
         // Admin user (Nutricionista)
         User::create([
-            'name' => env('SEED_ADMIN_NAME', 'Maria Fernanda Trinidad'),
-            'email' => env('SEED_ADMIN_EMAIL', 'nutricionista@consultapp.com'),
-            'password' => env('SEED_ADMIN_PASSWORD', 'changeme'),
+            'name' => config('app.seed_admin_name', 'Maria Fernanda Trinidad'),
+            'email' => config('app.seed_admin_email', 'nutricionista@consultapp.com'),
+            'password' => Hash::make(config('app.seed_admin_password', 'Nutricionista2024!')),
             'role_id' => $nutritionistRole?->id ?? 1,
             'active' => true,
         ]);
 
         // Secretary user
         User::create([
-            'name' => env('SEED_SECRETARY_NAME', 'Ana Perez'),
-            'email' => env('SEED_SECRETARY_EMAIL', 'secretaria@consultapp.com'),
-            'password' => env('SEED_SECRETARY_PASSWORD', 'changeme'),
+            'name' => config('app.seed_secretary_name', 'Ana Perez'),
+            'email' => config('app.seed_secretary_email', 'secretaria@consultapp.com'),
+            'password' => Hash::make(config('app.seed_secretary_password', 'Secretaria2024!')),
             'role_id' => $secretaryRole?->id ?? 2,
             'active' => true,
         ]);

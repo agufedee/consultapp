@@ -16,12 +16,12 @@ class AppointmentPolicy
     }
 
     /**
-     * Nutricionista can view their own appointments.
-     * Secretaria and Admin can view all.
+     * Admin/Nutricionista can view all appointments.
+     * Secretaria can view all.
      */
     public function view(User $user, Appointment $appointment): bool
     {
-        if ($user->hasAnyRole(['Secretaria', 'Admin'])) {
+        if ($user->hasAnyRole(['Secretaria', 'Admin', 'Nutricionista'])) {
             return true;
         }
 
@@ -38,20 +38,14 @@ class AppointmentPolicy
     }
 
     /**
-     * Nutricionista can update their own appointments only.
+     * Admin/Nutricionista can update any appointment.
      * Secretaria cannot update.
-     * Admin can update everything.
      */
     public function update(User $user, Appointment $appointment): bool
     {
-        // Admin can do anything
-        if ($user->role->name === 'Admin') {
+        // Admin and Nutricionista can do anything
+        if ($user->isAdmin() || $user->isNutricionista()) {
             return true;
-        }
-
-        // Nutricionista can only update their own appointments
-        if ($user->role->name === 'Nutricionista') {
-            return $appointment->user_id === $user->id;
         }
 
         // Secretaria cannot update appointments
@@ -59,18 +53,18 @@ class AppointmentPolicy
     }
 
     /**
-     * Only Admin can delete appointments.
+     * Admin/Nutricionista can delete any appointment.
      */
     public function delete(User $user, Appointment $appointment): bool
     {
-        return $user->role->name === 'Admin';
+        return $user->isAdmin() || $user->isNutricionista();
     }
 
     /**
-     * Only Admin can force delete.
+     * Admin/Nutricionista can force delete.
      */
     public function forceDelete(User $user, Appointment $appointment): bool
     {
-        return $user->role->name === 'Admin';
+        return $user->isAdmin() || $user->isNutricionista();
     }
 }

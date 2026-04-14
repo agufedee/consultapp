@@ -16,6 +16,7 @@ class NoOverlappingAppointments implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         $userId = $this->userId ?? request()->input('user_id');
+        $excludeId = $this->excludeAppointmentId ?? request()->input('exclude_appointment_id');
         $startDate = request()->input('start_date');
         $endDate = request()->input('end_date');
 
@@ -28,7 +29,7 @@ class NoOverlappingAppointments implements ValidationRule
 
         $overlapping = Appointment::query()
             ->where('user_id', $userId)
-            ->when($this->excludeAppointmentId, fn ($q) => $q->where('id', '!=', $this->excludeAppointmentId))
+            ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->where(function ($query) use ($startDate, $endDate) {
                 // New appointment starts during existing
                 $query->where(function ($q) use ($startDate) {

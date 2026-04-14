@@ -53,13 +53,10 @@ class Patient extends Model
 
     // ==================== ACCESSORS ====================
 
-    public function name(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->fullName,
-        );
-    }
-
+    /**
+     * Get patient's full name from related personalData.
+     * Accessible as $patient->full_name (snake_case) or $patient->fullName (camelCase).
+     */
     public function fullName(): Attribute
     {
         return Attribute::make(
@@ -101,12 +98,12 @@ class Patient extends Model
 
     // ==================== SCOPES ====================
 
-    public function scopeActive($query)
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('active', true);
     }
 
-    public function scopeSearch($query, $search)
+    public function scopeSearch(\Illuminate\Database\Eloquent\Builder $query, string $search): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereHas('personalData', function ($q) use ($search) {
             $q->where('first_name', 'like', "%{$search}%")

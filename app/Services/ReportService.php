@@ -50,7 +50,17 @@ class ReportService
             return collect();
         }
 
-        $retentionData = $cohort->map(function ($firstAppointment) use ($days) {
+        // Get all patient IDs from the cohort
+        $patientIds = $cohort->pluck('patient_id')->unique()->toArray();
+
+        // Single query to get ALL attended appointments for ALL patients in the cohort
+        // We'll filter in PHP since date ranges are per-patient
+        $allSecondAppointments = Appointment::whereIn('patient_id', $patientIds)
+            ->where('status', AppointmentStatus::ATENDIDO->value)
+            ->get()
+            ->groupBy('patient_id');
+
+        $retentionData = $cohort->map(function ($firstAppointment) use ($days, $allSecondAppointments) {
             // Null check for patient relationship
             if (! $firstAppointment->patient) {
                 return null; // Skip this record if patient is missing
@@ -59,18 +69,17 @@ class ReportService
             $patient = $firstAppointment->patient;
             $cohortEndDate = $firstAppointment->start_date->copy()->addDays($days);
 
-            $secondAppointment = Appointment::where('patient_id', $firstAppointment->patient_id)
-                ->where('status', AppointmentStatus::ATENDIDO->value)
-                ->whereBetween('start_date', [
-                    $firstAppointment->start_date->copy()->addMinute(),
-                    $cohortEndDate,
-                ])
-                ->orderBy('start_date')
+            // Find second appointment from the pre-fetched collection
+            $patientAppointments = $allSecondAppointments->get($firstAppointment->patient_id, collect());
+            $secondAppointment = $patientAppointments
+                ->where('start_date', '>', $firstAppointment->start_date)
+                ->where('start_date', '<=', $cohortEndDate)
+                ->sortBy('start_date')
                 ->first();
 
             return (object) [
                 'patient_id' => $firstAppointment->patient_id,
-                'patient_name' => $patient->name,
+                'patient_name' => $patient->full_name,
                 'first_appointment_date' => $firstAppointment->start_date,
                 'retention_deadline' => $cohortEndDate,
                 'retained' => $secondAppointment !== null,
@@ -118,7 +127,7 @@ class ReportService
             return (object) [
                 'id' => $appointment->id,
                 'patient_id' => $appointment->patient_id,
-                'patient_name' => $appointment->patient->name,
+                'patient_name' => $appointment->patient->full_name,
                 'date' => $appointment->start_date->format('Y-m-d'),
                 'time' => $appointment->start_date->format('H:i'),
                 'day_of_week' => $dayOfWeek,

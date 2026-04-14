@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Status extends Model
 {
@@ -11,7 +12,7 @@ class Status extends Model
 
     protected $fillable = ['status_name', 'description'];
 
-    public function appointments()
+    public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
     }

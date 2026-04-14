@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Appointments\Tables;
 
+use App\Enums\AppointmentStatus;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -15,9 +16,11 @@ class AppointmentsTable
     {
         return $table
             ->columns([
-                TextColumn::make('patient.id')
+                TextColumn::make('patient.full_name')
+                    ->label('Paciente')
                     ->searchable(),
                 TextColumn::make('user.name')
+                    ->label('Profesional')
                     ->searchable(),
                 IconColumn::make('send_reminder')
                     ->boolean(),
@@ -29,7 +32,11 @@ class AppointmentsTable
                 TextColumn::make('end_date')
                     ->dateTime()
                     ->sortable(),
-                TextColumn::make('status.id')
+                TextColumn::make('status')
+                    ->label('Estado')
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => $state instanceof AppointmentStatus ? $state->value : (string) $state)
+                    ->color(fn ($state): string => AppointmentStatus::fromName($state instanceof AppointmentStatus ? $state->value : (string) $state)?->getColor() ?? 'gray')
                     ->searchable(),
                 TextColumn::make('cancellation_reason')
                     ->searchable(),
